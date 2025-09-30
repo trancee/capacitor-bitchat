@@ -1,4 +1,4 @@
-import { BluetoothMesh } from '@capacitor-trancee/bluetooth-mesh'
+import { Bitchat } from '@capacitor-trancee/bitchat'
 
 const scrollToBottom = t => t.scrollTop = t.scrollHeight
 
@@ -108,7 +108,7 @@ window.execute = async (method, options) => {
 
         logStatus(`⚪ ${method}(${JSON.stringify(options) || ""})`)
 
-        const result = await BluetoothMesh[method](options)
+        const result = await Bitchat[method](options)
 
         logStatus(`⚫ ${method}(${JSON.stringify(result) || ""})`)
 
@@ -120,7 +120,7 @@ window.execute = async (method, options) => {
 
 window.addListeners = async () => {
     await Promise.all([
-        await BluetoothMesh.addListener('onStarted',
+        await Bitchat.addListener('onStarted',
             (event) => {
                 logEvent(`onStarted(${JSON.stringify(event) || ""})`)
 
@@ -129,12 +129,12 @@ window.addListeners = async () => {
                 if (peerID)
                     document.getElementById("peerID").value = peerID
             }),
-        await BluetoothMesh.addListener('onStopped',
+        await Bitchat.addListener('onStopped',
             () => {
                 logEvent(`onStopped()`)
             }),
 
-        await BluetoothMesh.addListener('onConnected',
+        await Bitchat.addListener('onConnected',
             (event) => {
                 logEvent(`onConnected(${JSON.stringify(event) || ""})`)
 
@@ -142,7 +142,7 @@ window.addListeners = async () => {
 
                 addOption(peerID, peerID)
             }),
-        await BluetoothMesh.addListener('onDisconnected',
+        await Bitchat.addListener('onDisconnected',
             (event) => {
                 logEvent(`onDisconnected(${JSON.stringify(event) || ""})`)
 
@@ -151,13 +151,13 @@ window.addListeners = async () => {
                 removeOption(peerID)
             }),
 
-        await BluetoothMesh.addListener('onSend',
+        await Bitchat.addListener('onSend',
             (event) => {
                 logEvent(`onSend(${JSON.stringify(event) || ""})`)
 
                 const messageID = event.messageID
             }),
-        await BluetoothMesh.addListener('onReceive',
+        await Bitchat.addListener('onReceive',
             (event) => {
                 logEvent(`onReceive(${JSON.stringify(event) || ""})`)
 
@@ -166,7 +166,7 @@ window.addListeners = async () => {
                 const peerID = event.peerID
             }),
 
-        await BluetoothMesh.addListener('onRSSI',
+        await Bitchat.addListener('onRSSI',
             (event) => {
                 logEvent(`onRSSI(${JSON.stringify(event) || ""})`)
 

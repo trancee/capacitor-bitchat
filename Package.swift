@@ -2,27 +2,27 @@
 import PackageDescription
 
 let package = Package(
-    name: "CapacitorTranceeBluetoothMesh",
+    name: "CapacitorTranceeBitchat",
     platforms: [.iOS(.v14)],
     products: [
         .library(
-            name: "CapacitorTranceeBluetoothMesh",
-            targets: ["BluetoothMeshPlugin"])
+            name: "CapacitorTranceeBitchat",
+            targets: ["BitchatPlugin"])
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "7.0.0")
     ],
     targets: [
         .target(
-            name: "BluetoothMeshPlugin",
+            name: "BitchatPlugin",
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm")
             ],
-            path: "ios/Sources/BluetoothMeshPlugin"),
+            path: "ios/Sources/BitchatPlugin"),
         .testTarget(
-            name: "BluetoothMeshPluginTests",
-            dependencies: ["BluetoothMeshPlugin"],
-            path: "ios/Tests/BluetoothMeshPluginTests")
+            name: "BitchatPluginTests",
+            dependencies: ["BitchatPlugin"],
+            path: "ios/Tests/BitchatPluginTests")
     ]
 )

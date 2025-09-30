@@ -1,6 +1,6 @@
 package com.getcapacitor.community;
 
-import static com.getcapacitor.community.BluetoothMeshHelper.makeUUID;
+import static com.getcapacitor.community.BitchatHelper.makeUUID;
 
 import android.content.Context;
 import android.util.Base64;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 
-public class BluetoothMesh {
+public class Bitchat {
 
     private final String MISSING_PAYLOAD = "missing payload";
 
@@ -30,7 +30,7 @@ public class BluetoothMesh {
     private boolean isStarted = false;
 
     @NonNull
-    private final BluetoothMeshPlugin plugin;
+    private final BitchatPlugin plugin;
 
     @NonNull
     private final PermissionManager permissionManager;
@@ -38,7 +38,7 @@ public class BluetoothMesh {
     @NonNull
     private final BluetoothMeshService meshService;
 
-    public BluetoothMesh(@NonNull BluetoothMeshPlugin plugin) {
+    public Bitchat(@NonNull BitchatPlugin plugin) {
         this.plugin = plugin;
 
         Context context = plugin.getContext();

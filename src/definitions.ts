@@ -3,7 +3,7 @@ import type { PermissionState, PluginListenerHandle } from '@capacitor/core';
 export type PeerID = ID;
 export type MessageID = UUID;
 
-export interface BluetoothMeshPlugin {
+export interface BitchatPlugin {
   initialize(options?: InitializeOptions): Promise<void>;
   isInitialized(): Promise<IsInitializedResult>;
 

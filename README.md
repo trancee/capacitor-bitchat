@@ -1,11 +1,11 @@
-# @capacitor-trancee/bluetooth-mesh
+# @capacitor-trancee/bitchat
 
 Bluetooth mesh network
 
 ## Install
 
 ```bash
-npm install @capacitor-trancee/bluetooth-mesh
+npm install @capacitor-trancee/bitchat
 npx cap sync
 ```
 

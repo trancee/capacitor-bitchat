@@ -1,10 +1,10 @@
 import { registerPlugin } from '@capacitor/core';
 
-import type { BluetoothMeshPlugin } from './definitions';
+import type { BitchatPlugin } from './definitions';
 
-const BluetoothMesh = registerPlugin<BluetoothMeshPlugin>('BluetoothMesh', {
-  web: () => import('./web').then((m) => new m.BluetoothMeshWeb()),
+const Bitchat = registerPlugin<BitchatPlugin>('Bitchat', {
+  web: () => import('./web').then((m) => new m.BitchatWeb()),
 });
 
 export * from './definitions';
-export { BluetoothMesh };
+export { Bitchat };

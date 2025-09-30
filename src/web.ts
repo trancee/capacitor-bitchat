@@ -2,7 +2,7 @@ import { WebPlugin } from '@capacitor/core';
 
 import { ID, UUID } from './definitions';
 import type {
-  BluetoothMeshPlugin,
+  BitchatPlugin,
   InitializeOptions,
   IsInitializedResult,
   IsStartedResult,
@@ -16,7 +16,7 @@ import type {
 let isInitialized = false;
 let isStarted = false;
 
-export class BluetoothMeshWeb extends WebPlugin implements BluetoothMeshPlugin {
+export class BitchatWeb extends WebPlugin implements BitchatPlugin {
   async initialize(options?: InitializeOptions): Promise<void> {
     console.info('initialize', options ?? '');
     isInitialized = true;

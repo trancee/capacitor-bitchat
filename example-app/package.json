@@ -16,7 +16,7 @@
     "upgrade": "npm install --upgrade @capacitor/core @capacitor/android @capacitor/ios vite"
   },
   "dependencies": {
-    "@capacitor-trancee/bluetooth-mesh": "file:..",
+    "@capacitor-trancee/bitchat": "file:..",
     "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/ios": "^7.4.3"

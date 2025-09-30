@@ -7,7 +7,7 @@ import androidx.annotation.Nullable;
 import com.getcapacitor.JSObject;
 import java.util.UUID;
 
-public class BluetoothMeshHelper {
+public class BitchatHelper {
 
     @Nullable
     public static Boolean makeBoolean(@Nullable String value) {

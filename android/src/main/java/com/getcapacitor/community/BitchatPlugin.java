@@ -32,7 +32,7 @@ import java.util.UUID;
 import org.json.JSONException;
 
 @CapacitorPlugin(
-    name = "BluetoothMesh",
+    name = "Bitchat",
     permissions = {
         @Permission(
             strings = {
@@ -63,7 +63,7 @@ import org.json.JSONException;
         )
     }
 )
-public class BluetoothMeshPlugin extends Plugin {
+public class BitchatPlugin extends Plugin {
 
     // Initialization Listeners
 
@@ -82,7 +82,7 @@ public class BluetoothMeshPlugin extends Plugin {
 
     static final String RSSI_EVENT = "onRSSI";
 
-    private BluetoothMesh implementation;
+    private Bitchat implementation;
 
     boolean hasBackgroundLocation = false;
 
@@ -105,7 +105,7 @@ public class BluetoothMeshPlugin extends Plugin {
             }
         } catch (Exception ignored) {}
 
-        implementation = new BluetoothMesh(this);
+        implementation = new Bitchat(this);
     }
 
     /**

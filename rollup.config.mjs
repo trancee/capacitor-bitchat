@@ -4,7 +4,7 @@ export default {
     {
       file: 'dist/plugin.js',
       format: 'iife',
-      name: 'capacitorBluetoothMesh',
+      name: 'capacitorBitchat',
       globals: {
         '@capacitor/core': 'capacitorExports',
       },
