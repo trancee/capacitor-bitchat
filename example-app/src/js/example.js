@@ -165,6 +165,14 @@ window.addListeners = async () => {
                 const data = event.data
                 const peerID = event.peerID
             }),
+
+        await BluetoothMesh.addListener('onRSSI',
+            (event) => {
+                logEvent(`onRSSI(${JSON.stringify(event) || ""})`)
+
+                const peerID = event.peerID
+                const rssi = event.rssi
+            }),
     ])
 }
 

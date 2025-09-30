@@ -1,6 +1,6 @@
 import type { PermissionState, PluginListenerHandle } from '@capacitor/core';
 
-export type PeerID = UUID;
+export type PeerID = ID;
 export type MessageID = UUID;
 
 export interface BluetoothMeshPlugin {
@@ -22,6 +22,7 @@ export interface BluetoothMeshPlugin {
   addListener(eventName: 'onDisconnected', listenerFunc: OnDisconnectedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onSend', listenerFunc: OnSendListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onReceive', listenerFunc: OnReceiveListener): Promise<PluginListenerHandle>;
+  addListener(eventName: 'onRSSI', listenerFunc: OnRSSIListener): Promise<PluginListenerHandle>;
 
   removeAllListeners(): Promise<void>;
 }
@@ -102,15 +103,20 @@ export interface OnReceiveEvent {
   data: Base64;
   peerID?: PeerID;
 }
+export type OnRSSIListener = (event: OnRSSIEvent) => void;
+export interface OnRSSIEvent {
+  peerID: PeerID;
+  rssi: number;
+}
 
 // Helpers
 
-export type Base64 = string & { readonly __brand: unique symbol };
-export function isBase64(value: string): value is Base64 {
-  return /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value);
+export type ID = string & { readonly __brand: unique symbol };
+export function isID(value: string): value is ID {
+  return /^[0-9a-fA-F]{16}$/i.test(value);
 }
-export function Base64(value: string): Base64 {
-  return isBase64(value) ? (value as Base64) : (undefined as never);
+export function ID(value: string): ID {
+  return isID(value) ? (value as ID) : (undefined as never);
 }
 
 export type UUID = string & { readonly __brand: unique symbol };
@@ -119,4 +125,12 @@ export function isUUID(value: string): value is UUID {
 }
 export function UUID(value: string): UUID {
   return isUUID(value) ? (value as UUID) : (undefined as never);
+}
+
+export type Base64 = string & { readonly __brand: unique symbol };
+export function isBase64(value: string): value is Base64 {
+  return /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value);
+}
+export function Base64(value: string): Base64 {
+  return isBase64(value) ? (value as Base64) : (undefined as never);
 }

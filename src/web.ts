@@ -1,5 +1,6 @@
 import { WebPlugin } from '@capacitor/core';
 
+import { ID, UUID } from './definitions';
 import type {
   BluetoothMeshPlugin,
   InitializeOptions,
@@ -11,7 +12,6 @@ import type {
   PermissionStatus,
   Permissions,
 } from './definitions';
-import { UUID } from './definitions';
 
 let isInitialized = false;
 let isStarted = false;
@@ -28,9 +28,13 @@ export class BluetoothMeshWeb extends WebPlugin implements BluetoothMeshPlugin {
 
   async start(options?: StartOptions): Promise<void> {
     console.info('start', options ?? '');
-    const peerID = options?.peerID || UUID('123e4567-e89b-12d3-a456-426614174000');
+    if (!isInitialized) {
+      throw new Error('not initialized');
+    }
+    const peerID = options?.peerID || ID('0011223344556677');
     isStarted = true;
     this.notifyListeners('onStarted', { peerID });
+    this.notifyListeners('onRSSI', { peerID, rssi: -42 });
   }
   async isStarted(): Promise<IsStartedResult> {
     console.info('isStarted', { isStarted });
@@ -45,6 +49,9 @@ export class BluetoothMeshWeb extends WebPlugin implements BluetoothMeshPlugin {
 
   async send(options: SendOptions): Promise<SendResult> {
     console.info('send', options);
+    if (!isStarted) {
+      throw new Error('not started');
+    }
     const messageID = UUID('123e4567-e89b-12d3-a456-426614174000');
     this.notifyListeners('onSend', { messageID });
     this.notifyListeners('onReceive', { messageID, ...options });

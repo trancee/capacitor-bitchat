@@ -27,6 +27,7 @@ npx cap sync
 * [`addListener('onDisconnected', ...)`](#addlistenerondisconnected-)
 * [`addListener('onSend', ...)`](#addlisteneronsend-)
 * [`addListener('onReceive', ...)`](#addlisteneronreceive-)
+* [`addListener('onRSSI', ...)`](#addlisteneronrssi-)
 * [`removeAllListeners()`](#removealllisteners)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
@@ -230,6 +231,22 @@ addListener(eventName: 'onReceive', listenerFunc: OnReceiveListener) => Promise<
 --------------------
 
 
+### addListener('onRSSI', ...)
+
+```typescript
+addListener(eventName: 'onRSSI', listenerFunc: OnRSSIListener) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                      |
+| ------------------ | --------------------------------------------------------- |
+| **`eventName`**    | <code>'onRSSI'</code>                                     |
+| **`listenerFunc`** | <code><a href="#onrssilistener">OnRSSIListener</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
 ### removeAllListeners()
 
 ```typescript
@@ -337,15 +354,23 @@ removeAllListeners() => Promise<void>
 | **`peerID`**    | <code><a href="#peerid">PeerID</a></code>       |
 
 
+#### OnRSSIEvent
+
+| Prop         | Type                                      |
+| ------------ | ----------------------------------------- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
+| **`rssi`**   | <code>number</code>                       |
+
+
 ### Type Aliases
 
 
 #### PeerID
 
-<code><a href="#uuid">UUID</a></code>
+<code><a href="#id">ID</a></code>
 
 
-#### UUID
+#### ID
 
 <code>string & { readonly __brand: unique symbol }</code>
 
@@ -353,6 +378,11 @@ removeAllListeners() => Promise<void>
 #### MessageID
 
 <code><a href="#uuid">UUID</a></code>
+
+
+#### UUID
+
+<code>string & { readonly __brand: unique symbol }</code>
 
 
 #### Base64
@@ -398,5 +428,10 @@ removeAllListeners() => Promise<void>
 #### OnReceiveListener
 
 <code>(event: <a href="#onreceiveevent">OnReceiveEvent</a>): void</code>
+
+
+#### OnRSSIListener
+
+<code>(event: <a href="#onrssievent">OnRSSIEvent</a>): void</code>
 
 </docgen-api>

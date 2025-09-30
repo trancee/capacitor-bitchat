@@ -3,6 +3,10 @@ ext {
     androidxAppCompatVersion = project.hasProperty('androidxAppCompatVersion') ? rootProject.ext.androidxAppCompatVersion : '1.7.0'
     androidxJunitVersion = project.hasProperty('androidxJunitVersion') ? rootProject.ext.androidxJunitVersion : '1.2.1'
     androidxEspressoCoreVersion = project.hasProperty('androidxEspressoCoreVersion') ? rootProject.ext.androidxEspressoCoreVersion : '3.6.1'
+    androidxCoreKtxVersion = project.hasProperty('androidxCoreKtxVersion') ? rootProject.ext.androidxCoreKtxVersion : '1.16.0'
+    androidxSecurityCryptoVersion = project.hasProperty('androidxSecurityCryptoVersion') ? rootProject.ext.androidxSecurityCryptoVersion : '1.1.0'
+    bouncyCastlePKIVersion = project.hasProperty('bouncyCastlePKIVersion') ? rootProject.ext.bouncyCastlePKIVersion : '1.70'
+    googleGsonVersion = project.hasProperty('googleGsonVersion') ? rootProject.ext.googleGsonVersion : '2.13.2'
 }
 
 buildscript {
@@ -11,11 +15,15 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.2'
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0'
+        classpath "org.jetbrains.kotlin.plugin.parcelize:org.jetbrains.kotlin.plugin.parcelize.gradle.plugin:2.2.20"
     }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.parcelize'
 
 android {
     namespace "com.getcapacitor.community"
@@ -40,6 +48,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
     }
+    kotlinOptions {
+        jvmTarget = '21'
+    }
 }
 
 repositories {
@@ -47,11 +58,15 @@ repositories {
     mavenCentral()
 }
 
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':capacitor-android')
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastlePKIVersion"
+    implementation "com.google.code.gson:gson:$googleGsonVersion"
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    //noinspection GradleDependency
+    implementation "androidx.core:core-ktx:$androidxCoreKtxVersion"
+    implementation "androidx.security:security-crypto:$androidxSecurityCryptoVersion"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
