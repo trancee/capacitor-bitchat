@@ -24,6 +24,10 @@ import org.jetbrains.annotations.NotNull;
 
 public class Bitchat {
 
+    private final String MISSING_PERMISSIONS = "missing permissions";
+    private final String BATTERY_OPTIMIZATION_DISABLED = "battery optimization disabled";
+    private final String NOT_INITIALIZED = "not initialized";
+    private final String NOT_STARTED = "not started";
     private final String MISSING_PAYLOAD = "missing payload";
 
     private boolean isInitialized = false;
@@ -54,18 +58,15 @@ public class Bitchat {
      */
 
     public void initialize(@NonNull InitializeOptions options, @NonNull Callback callback) {
-        // @Nullable
-        // Boolean verboseLogging = options.getVerboseLogging() != null ? options.getVerboseLogging() : config.getVerboseLogging();
-
         if (!permissionManager.areAllPermissionsGranted()) {
-            callback.error(new Exception("missing permissions"));
+            callback.error(new Exception(MISSING_PERMISSIONS));
             return;
         }
 
-        //        if (permissionManager.isBatteryOptimizationSupported() && !permissionManager.isBatteryOptimizationDisabled()) {
-        //            callback.error(new Exception("battery optimization disabled"));
-        //            return;
-        //        }
+        if (permissionManager.isBatteryOptimizationSupported() && !permissionManager.isBatteryOptimizationDisabled()) {
+            callback.error(new Exception(BATTERY_OPTIMIZATION_DISABLED));
+            return;
+        }
 
         meshService.setDelegate(
             new BluetoothMeshDelegate() {
@@ -82,13 +83,11 @@ public class Bitchat {
                 @Override
                 public String getNickname() {
                     System.out.println("getNickname");
-                    return "";
+                    return "unknown";
                 }
 
                 @Override
                 public void didReceiveMessage(@NotNull BitchatMessage message) {
-                    System.out.println("didReceiveMessage: " + message);
-
                     String messageID = message.getId();
                     String content = message.getContent();
                     String peerID = message.getSenderPeerID();
@@ -131,22 +130,16 @@ public class Bitchat {
 
                 @Override
                 public void onDeviceConnected(@NotNull String peerID) {
-                    System.out.println("onDeviceConnected: " + peerID);
-
                     plugin.onConnectedEvent(peerID);
                 }
 
                 @Override
                 public void onDeviceDisconnected(@NotNull String peerID) {
-                    System.out.println("onDeviceDisconnected: " + peerID);
-
                     plugin.onDisconnectedEvent(peerID);
                 }
 
                 @Override
                 public void onRSSIUpdated(@NotNull String peerID, int rssi) {
-                    System.out.println("onRSSIUpdated: " + peerID + ", " + rssi);
-
                     plugin.onRSSIEvent(peerID, rssi);
                 }
             }
@@ -164,7 +157,7 @@ public class Bitchat {
 
     public void start(@NonNull StartOptions options, @NonNull Callback callback) {
         if (!isInitialized) {
-            callback.error(new Exception("not initialized"));
+            callback.error(new Exception(NOT_INITIALIZED));
             return;
         }
 
@@ -194,11 +187,11 @@ public class Bitchat {
 
     public void send(@NonNull SendOptions options, @NonNull Callback callback) {
         if (!isInitialized) {
-            callback.error(new Exception("not initialized"));
+            callback.error(new Exception(NOT_INITIALIZED));
             return;
         }
         if (!isStarted) {
-            callback.error(new Exception("not started"));
+            callback.error(new Exception(NOT_STARTED));
             return;
         }
 

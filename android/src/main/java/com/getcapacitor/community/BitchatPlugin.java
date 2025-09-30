@@ -53,13 +53,6 @@ import org.json.JSONException;
                 Manifest.permission.ACCESS_FINE_LOCATION
             },
             alias = "location"
-        ),
-        @Permission(
-            strings = {
-                // Allows an app to access location in the background.
-                Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            },
-            alias = "background"
         )
     }
 )
@@ -84,26 +77,9 @@ public class BitchatPlugin extends Plugin {
 
     private Bitchat implementation;
 
-    boolean hasBackgroundLocation = false;
-
     @Override
     public void load() {
         super.load();
-
-        try {
-            PackageInfo packageInfo = getContext()
-                .getPackageManager()
-                .getPackageInfo(getContext().getPackageName(), PackageManager.GET_PERMISSIONS);
-            String[] permissions = packageInfo.requestedPermissions;
-            if (permissions != null) {
-                for (String permission : permissions) {
-                    if (permission.equals(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
-                        hasBackgroundLocation = true;
-                        break;
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
 
         implementation = new Bitchat(this);
     }
@@ -236,11 +212,6 @@ public class BitchatPlugin extends Plugin {
             aliases.add("location");
         }
 
-        // SDK >= 29 && SDK <= 30
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
-            aliases.add("background");
-        }
-
         return aliases;
     }
 
@@ -282,11 +253,6 @@ public class BitchatPlugin extends Plugin {
                                 aliases.add("location");
                             }
                             break;
-                        case "background":
-                            // SDK >= 29 && SDK <= 30
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
-                                aliases.add("background");
-                            }
                     }
                 }
             } catch (JSONException ignored) {
