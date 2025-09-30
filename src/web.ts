@@ -31,7 +31,7 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
     if (!isInitialized) {
       throw new Error('not initialized');
     }
-    const peerID = options?.peerID || ID('0011223344556677');
+    const peerID = ID('0011223344556677');
     isStarted = true;
     this.notifyListeners('onStarted', { peerID });
     this.notifyListeners('onRSSI', { peerID, rssi: -42 });

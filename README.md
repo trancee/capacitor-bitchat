@@ -1,6 +1,20 @@
 # @capacitor-trancee/bitchat
 
-Bluetooth mesh network
+<img width="256" height="256" alt="icon_128x128@2x" src="https://github.com/user-attachments/assets/90133f83-b4f6-41c6-aab9-25d0859d2a47" />
+
+### Bluetooth Mesh Network (Offline)
+
+- **Local Communication**: Direct peer-to-peer within Bluetooth range
+- **Multi-hop Relay**: Messages route through nearby devices (max 7 hops)
+- **No Internet Required**: Works completely offline in disaster scenarios
+- **Noise Protocol Encryption**: End-to-end encryption with forward secrecy
+- **Binary Protocol**: Compact packet format optimized for Bluetooth LE constraints
+- **Automatic Discovery**: Peer discovery and connection management
+- **Adaptive Power**: Battery-optimized duty cycling
+
+https://github.com/permissionlesstech/bitchat
+https://github.com/permissionlesstech/bitchat-android
+
 
 ## Install
 
@@ -271,10 +285,6 @@ removeAllListeners() => Promise<void>
 
 #### StartOptions
 
-| Prop         | Type                                      |
-| ------------ | ----------------------------------------- |
-| **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
-
 
 #### IsStartedResult
 
@@ -300,11 +310,10 @@ removeAllListeners() => Promise<void>
 
 #### PermissionStatus
 
-| Prop             | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                   | Since |
-| ---------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| **`bluetooth`**  | <code><a href="#permissionstate">PermissionState</a></code> | `BLUETOOTH_ADVERTISE` Required to be able to advertise to nearby Bluetooth devices. `BLUETOOTH_CONNECT` Required to be able to connect to paired Bluetooth devices. `BLUETOOTH_SCAN` Required to be able to discover and pair nearby Bluetooth devices. `BLUETOOTH` Allows applications to connect to paired bluetooth devices. `BLUETOOTH_ADMIN` Allows applications to discover and pair bluetooth devices. | 1.0.0 |
-| **`location`**   | <code><a href="#permissionstate">PermissionState</a></code> | `ACCESS_FINE_LOCATION` Allows an app to access precise location. ![Android](assets/android.svg) Only available for Android.                                                                                                                                                                                                                                                                                   | 1.0.0 |
-| **`background`** | <code><a href="#permissionstate">PermissionState</a></code> | `ACCESS_BACKGROUND_LOCATION` Allows an app to access location in the background. ![Android](assets/android.svg) Only available for Android.                                                                                                                                                                                                                                                                   | 1.1.0 |
+| Prop            | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                   | Since |
+| --------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **`bluetooth`** | <code><a href="#permissionstate">PermissionState</a></code> | `BLUETOOTH_ADVERTISE` Required to be able to advertise to nearby Bluetooth devices. `BLUETOOTH_CONNECT` Required to be able to connect to paired Bluetooth devices. `BLUETOOTH_SCAN` Required to be able to discover and pair nearby Bluetooth devices. `BLUETOOTH` Allows applications to connect to paired bluetooth devices. `BLUETOOTH_ADMIN` Allows applications to discover and pair bluetooth devices. | 0.1.0 |
+| **`location`**  | <code><a href="#permissionstate">PermissionState</a></code> | `ACCESS_FINE_LOCATION` Allows an app to access precise location. `ACCESS_COARSE_LOCATION` Allows an app to access approximate location. ![Android](assets/android.svg) Only available for Android.                                                                                                                                                                                                            | 0.1.0 |
 
 
 #### Permissions
@@ -365,16 +374,6 @@ removeAllListeners() => Promise<void>
 ### Type Aliases
 
 
-#### PeerID
-
-<code><a href="#id">ID</a></code>
-
-
-#### ID
-
-<code>string & { readonly __brand: unique symbol }</code>
-
-
 #### MessageID
 
 <code><a href="#uuid">UUID</a></code>
@@ -390,6 +389,16 @@ removeAllListeners() => Promise<void>
 <code>string & { readonly __brand: unique symbol }</code>
 
 
+#### PeerID
+
+<code><a href="#id">ID</a></code>
+
+
+#### ID
+
+<code>string & { readonly __brand: unique symbol }</code>
+
+
 #### PermissionState
 
 <code>'prompt' | 'prompt-with-rationale' | 'granted' | 'denied'</code>
@@ -397,7 +406,7 @@ removeAllListeners() => Promise<void>
 
 #### PermissionType
 
-<code>'bluetooth' | 'location' | 'background'</code>
+<code>'bluetooth' | 'location'</code>
 
 
 #### OnStartedListener

@@ -1,7 +1,7 @@
 {
   "name": "@capacitor-trancee/bitchat",
-  "version": "0.0.1",
-  "description": "Bluetooth mesh network",
+  "version": "0.1.0",
+  "description": "Bluetooth Mesh Network (Offline)",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",

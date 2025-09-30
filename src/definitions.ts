@@ -33,9 +33,7 @@ export interface IsInitializedResult {
   isInitialized?: boolean;
 }
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface StartOptions {
-  peerID?: PeerID;
-}
+export interface StartOptions {}
 export interface IsStartedResult {
   isStarted?: boolean;
 }
@@ -56,27 +54,20 @@ export interface PermissionStatus {
    * `BLUETOOTH`  Allows applications to connect to paired bluetooth devices.
    * `BLUETOOTH_ADMIN`  Allows applications to discover and pair bluetooth devices.
    *
-   * @since 1.0.0
+   * @since 0.1.0
    */
   bluetooth?: PermissionState;
   /**
    * `ACCESS_FINE_LOCATION`  Allows an app to access precise location.
+   * `ACCESS_COARSE_LOCATION`  Allows an app to access approximate location.
    *
    * ![Android](assets/android.svg) Only available for Android.
    *
-   * @since 1.0.0
+   * @since 0.1.0
    */
   location?: PermissionState;
-  /**
-   * `ACCESS_BACKGROUND_LOCATION`  Allows an app to access location in the background.
-   *
-   * ![Android](assets/android.svg) Only available for Android.
-   *
-   * @since 1.1.0
-   */
-  background?: PermissionState;
 }
-export type PermissionType = 'bluetooth' | 'location' | 'background';
+export type PermissionType = 'bluetooth' | 'location';
 export interface Permissions {
   permissions?: PermissionType[];
 }
