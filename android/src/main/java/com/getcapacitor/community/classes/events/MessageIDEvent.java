@@ -1,15 +1,16 @@
 package com.getcapacitor.community.classes.events;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import com.getcapacitor.JSObject;
 import java.util.UUID;
 
 public class MessageIDEvent {
 
-    @NonNull
+    @Nullable
     UUID messageID;
 
-    public MessageIDEvent(@NonNull UUID messageID) {
+    public MessageIDEvent(@Nullable UUID messageID) {
         this.messageID = messageID;
     }
 
@@ -17,7 +18,7 @@ public class MessageIDEvent {
     public JSObject toJSObject() {
         JSObject result = new JSObject();
 
-        result.put("messageID", messageID.toString());
+        if (messageID != null) result.put("messageID", messageID.toString());
 
         return result;
     }

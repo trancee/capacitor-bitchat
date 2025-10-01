@@ -16,8 +16,8 @@ import com.getcapacitor.community.classes.events.ConnectedEvent;
 import com.getcapacitor.community.classes.events.DisconnectedEvent;
 import com.getcapacitor.community.classes.events.PeerListUpdatedEvent;
 import com.getcapacitor.community.classes.events.RSSIUpdatedEvent;
-import com.getcapacitor.community.classes.events.ReceiveEvent;
-import com.getcapacitor.community.classes.events.SendEvent;
+import com.getcapacitor.community.classes.events.ReceivedEvent;
+import com.getcapacitor.community.classes.events.SentEvent;
 import com.getcapacitor.community.classes.events.StartedEvent;
 import com.getcapacitor.community.classes.events.StoppedEvent;
 import com.getcapacitor.community.classes.options.InitializeOptions;
@@ -76,8 +76,8 @@ public class BitchatPlugin extends Plugin {
 
     // Transmission Listeners
 
-    static final String SEND_EVENT = "onSend";
-    static final String RECEIVE_EVENT = "onReceive";
+    static final String SENT_EVENT = "onSent";
+    static final String RECEIVED_EVENT = "onReceived";
 
     static final String RSSI_UPDATED_EVENT = "onRSSIUpdated";
     static final String PEER_LIST_UPDATED_EVENT = "onPeerListUpdated";
@@ -326,16 +326,16 @@ public class BitchatPlugin extends Plugin {
      * Transmission Listeners
      */
 
-    protected void onSendEvent(UUID messageID) {
-        SendEvent event = new SendEvent(messageID);
+    protected void onSentEvent(UUID messageID, String peerID) {
+        SentEvent event = new SentEvent(messageID, peerID);
 
-        notifyListeners(SEND_EVENT, event.toJSObject());
+        notifyListeners(SENT_EVENT, event.toJSObject());
     }
 
-    protected void onReceiveEvent(UUID messageID, byte[] data, String peerID) {
-        ReceiveEvent event = new ReceiveEvent(messageID, data, peerID);
+    protected void onReceivedEvent(UUID messageID, byte[] data, String peerID) {
+        ReceivedEvent event = new ReceivedEvent(messageID, data, peerID);
 
-        notifyListeners(RECEIVE_EVENT, event.toJSObject());
+        notifyListeners(RECEIVED_EVENT, event.toJSObject());
     }
 
     protected void onRSSIUpdatedEvent(String peerID, int rssi) {

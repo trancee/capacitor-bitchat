@@ -6,15 +6,15 @@ import androidx.annotation.Nullable;
 import com.getcapacitor.JSObject;
 import java.util.UUID;
 
-public class ReceiveEvent extends MessageIDEvent {
+public class ReceivedEvent extends MessageIDEvent {
 
-    @Nullable
+    @NonNull
     private final byte[] data;
 
     @Nullable
     private final String peerID;
 
-    public ReceiveEvent(@NonNull UUID messageID, @Nullable byte[] data, @Nullable String peerID) {
+    public ReceivedEvent(@Nullable UUID messageID, @NonNull byte[] data, @Nullable String peerID) {
         super(messageID);
         this.data = data;
         this.peerID = peerID;
@@ -24,7 +24,7 @@ public class ReceiveEvent extends MessageIDEvent {
     public JSObject toJSObject() {
         JSObject result = super.toJSObject();
 
-        if (data != null && data.length > 0) {
+        if (data.length > 0) {
             result.put("data", Base64.encodeToString(data, Base64.NO_WRAP));
         }
 

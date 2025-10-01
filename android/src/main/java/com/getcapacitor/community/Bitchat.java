@@ -107,7 +107,7 @@ public class Bitchat {
                     String peerID = message.getSenderPeerID();
                     byte[] data = Base64.decode(content, Base64.NO_WRAP);
 
-                    plugin.onReceiveEvent(makeUUID(messageID), data, peerID);
+                    plugin.onReceivedEvent(makeUUID(messageID), data, peerID);
                 }
 
                 @Override
@@ -159,6 +159,18 @@ public class Bitchat {
                 @Override
                 public void onRSSIUpdated(@NotNull String peerID, int rssi) {
                     plugin.onRSSIUpdatedEvent(peerID, rssi);
+                }
+
+                @Override
+                public void onPeerInfoUpdated(@NotNull String peerID, @NotNull String nickname) {
+                    byte[] data = Base64.decode(nickname, Base64.NO_WRAP);
+
+                    plugin.onReceivedEvent(null, data, peerID);
+                }
+
+                @Override
+                public void onSent(@NotNull String messageID, @Nullable String peerID) {
+                    plugin.onSentEvent(makeUUID(messageID), peerID);
                 }
             }
         );

@@ -58,8 +58,8 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
       throw new Error('not started');
     }
     const messageID = UUID('123e4567-e89b-12d3-a456-426614174000');
-    this.notifyListeners('onSend', { messageID });
-    this.notifyListeners('onReceive', { messageID, ...options });
+    this.notifyListeners('onSent', { messageID });
+    this.notifyListeners('onReceived', { messageID, ...options });
     return { messageID };
   }
 

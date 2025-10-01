@@ -22,8 +22,8 @@ export interface BitchatPlugin {
   addListener(eventName: 'onConnected', listenerFunc: OnConnectedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onDisconnected', listenerFunc: OnDisconnectedListener): Promise<PluginListenerHandle>;
 
-  addListener(eventName: 'onSend', listenerFunc: OnSendListener): Promise<PluginListenerHandle>;
-  addListener(eventName: 'onReceive', listenerFunc: OnReceiveListener): Promise<PluginListenerHandle>;
+  addListener(eventName: 'onSent', listenerFunc: OnSentListener): Promise<PluginListenerHandle>;
+  addListener(eventName: 'onReceived', listenerFunc: OnReceivedListener): Promise<PluginListenerHandle>;
 
   addListener(eventName: 'onRSSIUpdated', listenerFunc: OnRSSIUpdatedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onPeerListUpdated', listenerFunc: OnPeerListUpdatedListener): Promise<PluginListenerHandle>;
@@ -120,13 +120,17 @@ export type OnDisconnectedListener = (event: OnDisconnectedEvent) => void;
 export interface OnDisconnectedEvent {
   peerID: PeerID;
 }
-export type OnSendListener = (event: OnSendEvent) => void;
-export interface OnSendEvent {
+export type OnSentListener = (event: OnSentEvent) => void;
+export interface OnSentEvent {
   messageID: MessageID;
+  /**
+   * @since 0.1.2
+   */
+  peerID?: PeerID;
 }
-export type OnReceiveListener = (event: OnReceiveEvent) => void;
-export interface OnReceiveEvent {
-  messageID: MessageID;
+export type OnReceivedListener = (event: OnReceivedEvent) => void;
+export interface OnReceivedEvent {
+  messageID?: MessageID;
   data: Base64;
   peerID?: PeerID;
 }

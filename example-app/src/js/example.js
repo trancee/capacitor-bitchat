@@ -155,15 +155,16 @@ window.addListeners = async () => {
                 removeOption(peerID)
             }),
 
-        await Bitchat.addListener('onSend',
+        await Bitchat.addListener('onSent',
             (event) => {
-                logEvent(`onSend(${JSON.stringify(event) || ""})`)
+                logEvent(`onSent(${JSON.stringify(event) || ""})`)
 
                 const messageID = event.messageID
+                const peerID = event.peerID
             }),
-        await Bitchat.addListener('onReceive',
+        await Bitchat.addListener('onReceived',
             (event) => {
-                logEvent(`onReceive(${JSON.stringify(event) || ""})`)
+                logEvent(`onReceived(${JSON.stringify(event) || ""})`)
 
                 const messageID = event.messageID
                 const data = event.data

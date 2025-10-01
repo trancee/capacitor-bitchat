@@ -39,8 +39,8 @@ npx cap sync
 * [`addListener('onStopped', ...)`](#addlisteneronstopped-)
 * [`addListener('onConnected', ...)`](#addlisteneronconnected-)
 * [`addListener('onDisconnected', ...)`](#addlistenerondisconnected-)
-* [`addListener('onSend', ...)`](#addlisteneronsend-)
-* [`addListener('onReceive', ...)`](#addlisteneronreceive-)
+* [`addListener('onSent', ...)`](#addlisteneronsent-)
+* [`addListener('onReceived', ...)`](#addlisteneronreceived-)
 * [`addListener('onRSSIUpdated', ...)`](#addlisteneronrssiupdated-)
 * [`addListener('onPeerListUpdated', ...)`](#addlisteneronpeerlistupdated-)
 * [`removeAllListeners()`](#removealllisteners)
@@ -218,32 +218,32 @@ addListener(eventName: 'onDisconnected', listenerFunc: OnDisconnectedListener) =
 --------------------
 
 
-### addListener('onSend', ...)
+### addListener('onSent', ...)
 
 ```typescript
-addListener(eventName: 'onSend', listenerFunc: OnSendListener) => Promise<PluginListenerHandle>
+addListener(eventName: 'onSent', listenerFunc: OnSentListener) => Promise<PluginListenerHandle>
 ```
 
 | Param              | Type                                                      |
 | ------------------ | --------------------------------------------------------- |
-| **`eventName`**    | <code>'onSend'</code>                                     |
-| **`listenerFunc`** | <code><a href="#onsendlistener">OnSendListener</a></code> |
+| **`eventName`**    | <code>'onSent'</code>                                     |
+| **`listenerFunc`** | <code><a href="#onsentlistener">OnSentListener</a></code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
 
 --------------------
 
 
-### addListener('onReceive', ...)
+### addListener('onReceived', ...)
 
 ```typescript
-addListener(eventName: 'onReceive', listenerFunc: OnReceiveListener) => Promise<PluginListenerHandle>
+addListener(eventName: 'onReceived', listenerFunc: OnReceivedListener) => Promise<PluginListenerHandle>
 ```
 
-| Param              | Type                                                            |
-| ------------------ | --------------------------------------------------------------- |
-| **`eventName`**    | <code>'onReceive'</code>                                        |
-| **`listenerFunc`** | <code><a href="#onreceivelistener">OnReceiveListener</a></code> |
+| Param              | Type                                                              |
+| ------------------ | ----------------------------------------------------------------- |
+| **`eventName`**    | <code>'onReceived'</code>                                         |
+| **`listenerFunc`** | <code><a href="#onreceivedlistener">OnReceivedListener</a></code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
 
@@ -392,14 +392,15 @@ removeAllListeners() => Promise<void>
 | **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
 
 
-#### OnSendEvent
+#### OnSentEvent
 
-| Prop            | Type                                            |
-| --------------- | ----------------------------------------------- |
-| **`messageID`** | <code><a href="#messageid">MessageID</a></code> |
+| Prop            | Type                                            | Since |
+| --------------- | ----------------------------------------------- | ----- |
+| **`messageID`** | <code><a href="#messageid">MessageID</a></code> |       |
+| **`peerID`**    | <code><a href="#peerid">PeerID</a></code>       | 0.1.2 |
 
 
-#### OnReceiveEvent
+#### OnReceivedEvent
 
 | Prop            | Type                                            |
 | --------------- | ----------------------------------------------- |
@@ -481,14 +482,14 @@ removeAllListeners() => Promise<void>
 <code>(event: <a href="#ondisconnectedevent">OnDisconnectedEvent</a>): void</code>
 
 
-#### OnSendListener
+#### OnSentListener
 
-<code>(event: <a href="#onsendevent">OnSendEvent</a>): void</code>
+<code>(event: <a href="#onsentevent">OnSentEvent</a>): void</code>
 
 
-#### OnReceiveListener
+#### OnReceivedListener
 
-<code>(event: <a href="#onreceiveevent">OnReceiveEvent</a>): void</code>
+<code>(event: <a href="#onreceivedevent">OnReceivedEvent</a>): void</code>
 
 
 #### OnRSSIUpdatedListener

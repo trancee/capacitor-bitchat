@@ -242,6 +242,7 @@ class BluetoothMeshService(private val context: Context) {
             }
             
             override fun updatePeerInfo(peerID: String, nickname: String, noisePublicKey: ByteArray, signingPublicKey: ByteArray, isVerified: Boolean): Boolean {
+                delegate?.onPeerInfoUpdated(peerID, nickname)
                 return peerManager.updatePeerInfo(peerID, nickname, noisePublicKey, signingPublicKey, isVerified)
             }
             
@@ -817,7 +818,8 @@ class BluetoothMeshService(private val context: Context) {
                     // FIXED: Don't send didReceiveMessage for our own sent messages
                     // This was causing self-notifications - iOS doesn't do this
                     // The UI handles showing sent messages through its own message sending logic
-                    
+
+                    delegate?.onSent(finalMessageID, recipientPeerID) // trancee
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to encrypt private message for $recipientPeerID: ${e.message}")
                 }
@@ -1232,4 +1234,6 @@ interface BluetoothMeshDelegate {
     fun onDeviceConnected(peerID: String)
     fun onDeviceDisconnected(peerID: String)
     fun onRSSIUpdated(peerID: String, rssi: Int)
+    fun onPeerInfoUpdated(peerID: String, nickname: String)
+    fun onSent(messageID: String, peerID: String?)
 }
