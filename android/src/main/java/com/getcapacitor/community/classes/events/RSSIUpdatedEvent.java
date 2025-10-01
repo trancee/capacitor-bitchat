@@ -3,11 +3,11 @@ package com.getcapacitor.community.classes.events;
 import androidx.annotation.NonNull;
 import com.getcapacitor.JSObject;
 
-public class RSSIEvent extends PeerIDEvent {
+public class RSSIUpdatedEvent extends PeerIDEvent {
 
     int rssi;
 
-    public RSSIEvent(@NonNull String peerID, int rssi) {
+    public RSSIUpdatedEvent(@NonNull String peerID, int rssi) {
         super(peerID);
         this.rssi = rssi;
     }

@@ -41,7 +41,8 @@ npx cap sync
 * [`addListener('onDisconnected', ...)`](#addlistenerondisconnected-)
 * [`addListener('onSend', ...)`](#addlisteneronsend-)
 * [`addListener('onReceive', ...)`](#addlisteneronreceive-)
-* [`addListener('onRSSI', ...)`](#addlisteneronrssi-)
+* [`addListener('onRSSIUpdated', ...)`](#addlisteneronrssiupdated-)
+* [`addListener('onPeerListUpdated', ...)`](#addlisteneronpeerlistupdated-)
 * [`removeAllListeners()`](#removealllisteners)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
@@ -54,12 +55,14 @@ npx cap sync
 ### initialize(...)
 
 ```typescript
-initialize(options?: InitializeOptions | undefined) => Promise<void>
+initialize(options?: InitializeOptions | undefined) => Promise<InitializeResult>
 ```
 
 | Param         | Type                                                            |
 | ------------- | --------------------------------------------------------------- |
 | **`options`** | <code><a href="#initializeoptions">InitializeOptions</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#initializeresult">InitializeResult</a>&gt;</code>
 
 --------------------
 
@@ -78,12 +81,14 @@ isInitialized() => Promise<IsInitializedResult>
 ### start(...)
 
 ```typescript
-start(options?: StartOptions | undefined) => Promise<void>
+start(options?: StartOptions | undefined) => Promise<StartResult>
 ```
 
 | Param         | Type                                                  |
 | ------------- | ----------------------------------------------------- |
 | **`options`** | <code><a href="#startoptions">StartOptions</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#startresult">StartResult</a>&gt;</code>
 
 --------------------
 
@@ -245,16 +250,32 @@ addListener(eventName: 'onReceive', listenerFunc: OnReceiveListener) => Promise<
 --------------------
 
 
-### addListener('onRSSI', ...)
+### addListener('onRSSIUpdated', ...)
 
 ```typescript
-addListener(eventName: 'onRSSI', listenerFunc: OnRSSIListener) => Promise<PluginListenerHandle>
+addListener(eventName: 'onRSSIUpdated', listenerFunc: OnRSSIUpdatedListener) => Promise<PluginListenerHandle>
 ```
 
-| Param              | Type                                                      |
-| ------------------ | --------------------------------------------------------- |
-| **`eventName`**    | <code>'onRSSI'</code>                                     |
-| **`listenerFunc`** | <code><a href="#onrssilistener">OnRSSIListener</a></code> |
+| Param              | Type                                                                    |
+| ------------------ | ----------------------------------------------------------------------- |
+| **`eventName`**    | <code>'onRSSIUpdated'</code>                                            |
+| **`listenerFunc`** | <code><a href="#onrssiupdatedlistener">OnRSSIUpdatedListener</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('onPeerListUpdated', ...)
+
+```typescript
+addListener(eventName: 'onPeerListUpdated', listenerFunc: OnPeerListUpdatedListener) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                                            |
+| ------------------ | ------------------------------------------------------------------------------- |
+| **`eventName`**    | <code>'onPeerListUpdated'</code>                                                |
+| **`listenerFunc`** | <code><a href="#onpeerlistupdatedlistener">OnPeerListUpdatedListener</a></code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
 
@@ -273,6 +294,13 @@ removeAllListeners() => Promise<void>
 ### Interfaces
 
 
+#### InitializeResult
+
+| Prop         | Type                                      | Since |
+| ------------ | ----------------------------------------- | ----- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> | 0.1.1 |
+
+
 #### InitializeOptions
 
 
@@ -283,7 +311,18 @@ removeAllListeners() => Promise<void>
 | **`isInitialized`** | <code>boolean</code> |
 
 
+#### StartResult
+
+| Prop         | Type                                      | Since |
+| ------------ | ----------------------------------------- | ----- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> | 0.1.1 |
+
+
 #### StartOptions
+
+| Prop       | Type                                      | Since |
+| ---------- | ----------------------------------------- | ----- |
+| **`data`** | <code><a href="#base64">Base64</a></code> | 0.1.1 |
 
 
 #### IsStartedResult
@@ -333,6 +372,11 @@ removeAllListeners() => Promise<void>
 
 #### OnStartedEvent
 
+| Prop            | Type                                      | Since |
+| --------------- | ----------------------------------------- | ----- |
+| **`peerID`**    | <code><a href="#peerid">PeerID</a></code> | 0.1.0 |
+| **`isStarted`** | <code>boolean</code>                      | 0.1.1 |
+
 
 #### OnConnectedEvent
 
@@ -364,7 +408,7 @@ removeAllListeners() => Promise<void>
 | **`peerID`**    | <code><a href="#peerid">PeerID</a></code>       |
 
 
-#### OnRSSIEvent
+#### OnRSSIUpdatedEvent
 
 | Prop         | Type                                      |
 | ------------ | ----------------------------------------- |
@@ -372,15 +416,22 @@ removeAllListeners() => Promise<void>
 | **`rssi`**   | <code>number</code>                       |
 
 
+#### OnPeerListUpdatedEvent
+
+| Prop        | Type              | Since |
+| ----------- | ----------------- | ----- |
+| **`peers`** | <code>ID[]</code> | 0.1.1 |
+
+
 ### Type Aliases
 
 
-#### MessageID
+#### PeerID
 
-<code><a href="#uuid">UUID</a></code>
+<code><a href="#id">ID</a></code>
 
 
-#### UUID
+#### ID
 
 <code>string & { readonly __brand: unique symbol }</code>
 
@@ -390,12 +441,12 @@ removeAllListeners() => Promise<void>
 <code>string & { readonly __brand: unique symbol }</code>
 
 
-#### PeerID
+#### MessageID
 
-<code><a href="#id">ID</a></code>
+<code><a href="#uuid">UUID</a></code>
 
 
-#### ID
+#### UUID
 
 <code>string & { readonly __brand: unique symbol }</code>
 
@@ -440,8 +491,13 @@ removeAllListeners() => Promise<void>
 <code>(event: <a href="#onreceiveevent">OnReceiveEvent</a>): void</code>
 
 
-#### OnRSSIListener
+#### OnRSSIUpdatedListener
 
-<code>(event: <a href="#onrssievent">OnRSSIEvent</a>): void</code>
+<code>(event: <a href="#onrssiupdatedevent">OnRSSIUpdatedEvent</a>): void</code>
+
+
+#### OnPeerListUpdatedListener
+
+<code>(event: <a href="#onpeerlistupdatedevent">OnPeerListUpdatedEvent</a>): void</code>
 
 </docgen-api>

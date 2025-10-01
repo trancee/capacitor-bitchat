@@ -4,37 +4,42 @@ import { ID, UUID } from './definitions';
 import type {
   BitchatPlugin,
   InitializeOptions,
+  InitializeResult,
   IsInitializedResult,
+  StartOptions,
+  StartResult,
   IsStartedResult,
   SendOptions,
   SendResult,
-  StartOptions,
   PermissionStatus,
   Permissions,
 } from './definitions';
 
 let isInitialized = false;
 let isStarted = false;
+const peerID = ID('0011223344556677');
 
 export class BitchatWeb extends WebPlugin implements BitchatPlugin {
-  async initialize(options?: InitializeOptions): Promise<void> {
+  async initialize(options?: InitializeOptions): Promise<InitializeResult> {
     console.info('initialize', options ?? '');
     isInitialized = true;
+    return { peerID };
   }
   async isInitialized(): Promise<IsInitializedResult> {
     console.info('isInitialized', { isInitialized });
     return { isInitialized };
   }
 
-  async start(options?: StartOptions): Promise<void> {
+  async start(options?: StartOptions): Promise<StartResult> {
     console.info('start', options ?? '');
     if (!isInitialized) {
       throw new Error('not initialized');
     }
-    const peerID = ID('0011223344556677');
     isStarted = true;
-    this.notifyListeners('onStarted', { peerID });
-    this.notifyListeners('onRSSI', { peerID, rssi: -42 });
+    this.notifyListeners('onStarted', { peerID, isStarted });
+    this.notifyListeners('onRSSIUpdated', { peerID, rssi: -42 });
+    this.notifyListeners('onPeerListUpdated', { peers: [peerID] });
+    return { peerID };
   }
   async isStarted(): Promise<IsStartedResult> {
     console.info('isStarted', { isStarted });

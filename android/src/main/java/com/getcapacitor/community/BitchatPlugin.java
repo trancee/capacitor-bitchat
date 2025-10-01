@@ -14,7 +14,8 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import com.getcapacitor.community.classes.events.ConnectedEvent;
 import com.getcapacitor.community.classes.events.DisconnectedEvent;
-import com.getcapacitor.community.classes.events.RSSIEvent;
+import com.getcapacitor.community.classes.events.PeerListUpdatedEvent;
+import com.getcapacitor.community.classes.events.RSSIUpdatedEvent;
 import com.getcapacitor.community.classes.events.ReceiveEvent;
 import com.getcapacitor.community.classes.events.SendEvent;
 import com.getcapacitor.community.classes.events.StartedEvent;
@@ -78,7 +79,8 @@ public class BitchatPlugin extends Plugin {
     static final String SEND_EVENT = "onSend";
     static final String RECEIVE_EVENT = "onReceive";
 
-    static final String RSSI_EVENT = "onRSSI";
+    static final String RSSI_UPDATED_EVENT = "onRSSIUpdated";
+    static final String PEER_LIST_UPDATED_EVENT = "onPeerListUpdated";
 
     private Bitchat implementation;
 
@@ -292,8 +294,8 @@ public class BitchatPlugin extends Plugin {
      * Initialization Listeners
      */
 
-    protected void onStartedEvent(String peerID) {
-        StartedEvent event = new StartedEvent(peerID);
+    protected void onStartedEvent(String peerID, Boolean isStarted) {
+        StartedEvent event = new StartedEvent(peerID, isStarted);
 
         notifyListeners(STARTED_EVENT, event.toJSObject());
     }
@@ -336,9 +338,15 @@ public class BitchatPlugin extends Plugin {
         notifyListeners(RECEIVE_EVENT, event.toJSObject());
     }
 
-    protected void onRSSIEvent(String peerID, int rssi) {
-        RSSIEvent event = new RSSIEvent(peerID, rssi);
+    protected void onRSSIUpdatedEvent(String peerID, int rssi) {
+        RSSIUpdatedEvent event = new RSSIUpdatedEvent(peerID, rssi);
 
-        notifyListeners(RSSI_EVENT, event.toJSObject());
+        notifyListeners(RSSI_UPDATED_EVENT, event.toJSObject());
+    }
+
+    protected void onPeerListUpdatedEvent(List<String> peers) {
+        PeerListUpdatedEvent event = new PeerListUpdatedEvent(peers);
+
+        notifyListeners(PEER_LIST_UPDATED_EVENT, event.toJSObject());
     }
 }

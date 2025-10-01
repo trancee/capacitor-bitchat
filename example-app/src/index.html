@@ -131,10 +131,10 @@
           <legend title="Initialize">Initialize</legend>
           <button onclick="toggle(this)" class="float">▼</button>
           <span style="display: none;">
-            <!-- <p>
-              <label for="verboseLogging">Verbose Logging</label>
-              <input type="checkbox" id="verboseLogging" name="verboseLogging" checked />
-            </p> -->
+            <p>
+              <label for="peerID">Peer ID</label>
+              <input type="text" id="peerID" name="peerID" value="" disabled />
+            </p>
           </span>
           <button onclick="testInitialize()">Initialize</button>
           <button onclick="testIsInitialized()">Is Initialized</button>
@@ -145,8 +145,8 @@
           <button onclick="toggle(this)" class="float">▼</button>
           <span style="display: none;">
             <p>
-              <label for="peerID">Peer ID</label>
-              <input type="text" id="peerID" name="peerID" value="" />
+              <label for="announcement">Data</label>
+              <textarea id="announcement" name="announcement" rows="3">TXkgQXBw</textarea>
             </p>
           </span>
           <button onclick="testStart()">Start</button>

@@ -10,9 +10,6 @@ public class SendOptions {
     private byte[] data;
 
     @Nullable
-    private String content;
-
-    @Nullable
     private String peerID;
 
     public SendOptions(PluginCall call) {
@@ -26,7 +23,6 @@ public class SendOptions {
     }
 
     private void setData(@Nullable String data) {
-        this.content = data;
         this.data = (data == null || data.isEmpty()) ? null : Base64.decode(data, Base64.NO_WRAP);
     }
 
@@ -37,11 +33,6 @@ public class SendOptions {
     @Nullable
     public byte[] getData() {
         return data;
-    }
-
-    @Nullable
-    public String getContent() {
-        return content;
     }
 
     @Nullable

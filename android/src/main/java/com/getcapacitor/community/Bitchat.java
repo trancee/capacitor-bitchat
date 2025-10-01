@@ -15,13 +15,15 @@ import com.bitchat.android.onboarding.PermissionManager;
 import com.getcapacitor.community.classes.options.InitializeOptions;
 import com.getcapacitor.community.classes.options.SendOptions;
 import com.getcapacitor.community.classes.options.StartOptions;
+import com.getcapacitor.community.classes.results.InitializeResult;
 import com.getcapacitor.community.classes.results.IsInitializedResult;
 import com.getcapacitor.community.classes.results.IsStartedResult;
 import com.getcapacitor.community.classes.results.SendResult;
+import com.getcapacitor.community.classes.results.StartResult;
 import com.getcapacitor.community.interfaces.Callback;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 
 public class Bitchat {
@@ -34,6 +36,8 @@ public class Bitchat {
 
     private boolean isInitialized = false;
     private boolean isStarted = false;
+
+    private String nickname;
 
     @NonNull
     private final BitchatPlugin plugin;
@@ -53,18 +57,7 @@ public class Bitchat {
         ComponentActivity activity = plugin.getActivity();
         Context context = plugin.getContext();
 
-        batteryOptimizationManager = new BatteryOptimizationManager(
-            activity,
-            context,
-            () -> {
-                System.out.println("Battery optimization disabled");
-                return null;
-            },
-            (message) -> {
-                System.out.println("Battery optimization failed: " + message);
-                return null;
-            }
-        );
+        batteryOptimizationManager = new BatteryOptimizationManager(activity, context, () -> Unit.INSTANCE, (message) -> Unit.INSTANCE);
 
         // Initialize permission management
         permissionManager = new PermissionManager(context);
@@ -104,8 +97,7 @@ public class Bitchat {
 
                 @Override
                 public String getNickname() {
-                    System.out.println("getNickname");
-                    return "unknown";
+                    return nickname != null ? nickname : null;
                 }
 
                 @Override
@@ -131,7 +123,7 @@ public class Bitchat {
 
                 @Override
                 public void didUpdatePeerList(@NotNull List<String> peers) {
-                    System.out.println("didUpdatePeerList: " + peers);
+                    plugin.onPeerListUpdatedEvent(peers);
                 }
 
                 @Override
@@ -141,12 +133,16 @@ public class Bitchat {
                 }
 
                 @Override
-                public void onStarted(@NotNull String peerID, boolean success) {
-                    plugin.onStartedEvent(peerID);
+                public void onStarted(@NotNull String peerID, @Nullable Boolean success) {
+                    isStarted = success != null && success;
+
+                    plugin.onStartedEvent(peerID, success);
                 }
 
                 @Override
                 public void onStopped() {
+                    isStarted = false;
+
                     plugin.onStoppedEvent();
                 }
 
@@ -162,14 +158,17 @@ public class Bitchat {
 
                 @Override
                 public void onRSSIUpdated(@NotNull String peerID, int rssi) {
-                    plugin.onRSSIEvent(peerID, rssi);
+                    plugin.onRSSIUpdatedEvent(peerID, rssi);
                 }
             }
         );
 
         isInitialized = true;
 
-        callback.success();
+        String peerID = meshService.getMyPeerID();
+
+        InitializeResult result = new InitializeResult(peerID);
+        callback.success(result);
     }
 
     public void isInitialized(@NonNull Callback callback) {
@@ -183,11 +182,19 @@ public class Bitchat {
             return;
         }
 
+        @Nullable
+        byte[] data = options.getData();
+
+        if (data != null) {
+            nickname = Base64.encodeToString(data, Base64.NO_WRAP);
+        }
+
         meshService.startServices();
 
-        isStarted = true;
+        String peerID = meshService.getMyPeerID();
 
-        callback.success();
+        StartResult result = new StartResult(peerID);
+        callback.success(result);
     }
 
     public void isStarted(@NonNull Callback callback) {
@@ -197,8 +204,6 @@ public class Bitchat {
 
     public void stop(@NonNull Callback callback) {
         meshService.stopServices();
-
-        isStarted = false;
 
         callback.success();
     }
@@ -219,10 +224,8 @@ public class Bitchat {
 
         @Nullable
         byte[] data = options.getData();
-        @Nullable
-        String content = options.getContent();
 
-        if (data == null || content == null) {
+        if (data == null) {
             callback.error(new Exception(MISSING_PAYLOAD));
             return;
         }
@@ -233,9 +236,9 @@ public class Bitchat {
         String peerID = options.getPeerID();
 
         if (peerID == null) {
-            meshService.sendMessage(content, Collections.emptyList(), null);
+            meshService.sendMessage(data);
         } else {
-            meshService.sendPrivateMessage(content, peerID, "unknown", messageID.toString());
+            meshService.sendPrivateMessage(data, peerID, messageID.toString());
         }
 
         SendResult result = new SendResult(messageID);

@@ -4,10 +4,10 @@ export type PeerID = ID;
 export type MessageID = UUID;
 
 export interface BitchatPlugin {
-  initialize(options?: InitializeOptions): Promise<void>;
+  initialize(options?: InitializeOptions): Promise<InitializeResult>;
   isInitialized(): Promise<IsInitializedResult>;
 
-  start(options?: StartOptions): Promise<void>;
+  start(options?: StartOptions): Promise<StartResult>;
   isStarted(): Promise<IsStartedResult>;
   stop(): Promise<void>;
 
@@ -18,22 +18,42 @@ export interface BitchatPlugin {
 
   addListener(eventName: 'onStarted', listenerFunc: OnStartedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onStopped', listenerFunc: OnStoppedListener): Promise<PluginListenerHandle>;
+
   addListener(eventName: 'onConnected', listenerFunc: OnConnectedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onDisconnected', listenerFunc: OnDisconnectedListener): Promise<PluginListenerHandle>;
+
   addListener(eventName: 'onSend', listenerFunc: OnSendListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onReceive', listenerFunc: OnReceiveListener): Promise<PluginListenerHandle>;
-  addListener(eventName: 'onRSSI', listenerFunc: OnRSSIListener): Promise<PluginListenerHandle>;
+
+  addListener(eventName: 'onRSSIUpdated', listenerFunc: OnRSSIUpdatedListener): Promise<PluginListenerHandle>;
+  addListener(eventName: 'onPeerListUpdated', listenerFunc: OnPeerListUpdatedListener): Promise<PluginListenerHandle>;
 
   removeAllListeners(): Promise<void>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface InitializeOptions {}
+export interface InitializeResult {
+  /**
+   * @since 0.1.1
+   */
+  peerID: PeerID;
+}
 export interface IsInitializedResult {
   isInitialized?: boolean;
 }
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface StartOptions {}
+export interface StartOptions {
+  /**
+   * @since 0.1.1
+   */
+  data?: Base64;
+}
+export interface StartResult {
+  /**
+   * @since 0.1.1
+   */
+  peerID: PeerID;
+}
 export interface IsStartedResult {
   isStarted?: boolean;
 }
@@ -81,8 +101,16 @@ export interface Permissions {
 }
 
 export type OnStartedListener = (event: OnStartedEvent) => void;
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface OnStartedEvent {}
+export interface OnStartedEvent {
+  /**
+   * @since 0.1.0
+   */
+  peerID: PeerID;
+  /**
+   * @since 0.1.1
+   */
+  isStarted?: boolean;
+}
 export type OnStoppedListener = (event: void) => void;
 export type OnConnectedListener = (event: OnConnectedEvent) => void;
 export interface OnConnectedEvent {
@@ -102,10 +130,17 @@ export interface OnReceiveEvent {
   data: Base64;
   peerID?: PeerID;
 }
-export type OnRSSIListener = (event: OnRSSIEvent) => void;
-export interface OnRSSIEvent {
+export type OnRSSIUpdatedListener = (event: OnRSSIUpdatedEvent) => void;
+export interface OnRSSIUpdatedEvent {
   peerID: PeerID;
   rssi: number;
+}
+export type OnPeerListUpdatedListener = (event: OnPeerListUpdatedEvent) => void;
+export interface OnPeerListUpdatedEvent {
+  /**
+   * @since 0.1.1
+   */
+  peers: PeerID[];
 }
 
 // Helpers

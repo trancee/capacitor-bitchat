@@ -23,11 +23,12 @@ const logEvent = (event) => {
 window.testInitialize = async () => {
     const options = {}
 
-    // if (document.getElementById("verboseLogging")) {
-    //     options.verboseLogging = document.getElementById("verboseLogging").checked
-    // }
-
     const result = await window.execute("initialize", options)
+
+    const peerID = result.peerID
+
+    if (peerID)
+        document.getElementById("peerID").value = peerID    
 }
 
 window.testIsInitialized = async () => {
@@ -39,8 +40,11 @@ window.testIsInitialized = async () => {
 window.testStart = async () => {
     const options = {}
 
-    if (document.getElementById("peerID") && document.getElementById("peerID").value.length > 0) {
-        options.peerID = document.getElementById("peerID").value
+    // if (document.getElementById("peerID") && document.getElementById("peerID").value.length > 0) {
+    //     options.peerID = document.getElementById("peerID").value
+    // }
+    if (document.getElementById("announcement") && document.getElementById("announcement").value.length > 0) {
+        options.data = document.getElementById("announcement").value
     }
 
     const result = await window.execute("start", options)
@@ -166,12 +170,35 @@ window.addListeners = async () => {
                 const peerID = event.peerID
             }),
 
-        await Bitchat.addListener('onRSSI',
+        await Bitchat.addListener('onRSSIUpdated',
             (event) => {
-                logEvent(`onRSSI(${JSON.stringify(event) || ""})`)
+                logEvent(`onRSSIUpdated(${JSON.stringify(event) || ""})`)
 
                 const peerID = event.peerID
                 const rssi = event.rssi
+            }),
+        await Bitchat.addListener('onPeerListUpdated',
+            (event) => {
+                logEvent(`onPeerListUpdated(${JSON.stringify(event) || ""})`)
+
+                const peers = event.peers
+
+                const removePeers = {}
+                
+                for (const option of document.querySelector("#peers").options) {
+                    removePeers[option.value] = true
+                }
+
+                peers.forEach(peerID => {
+                    delete removePeers[peerID]
+
+                    if (getOption(peerID)) return
+                    addOption(peerID, peerID)
+                })
+
+                Object.keys(removePeers).forEach(peerID => {
+                    removeOption(peerID)
+                })
             }),
     ])
 }
@@ -220,4 +247,7 @@ function removeOption(value) {
     if (option) {
         option.remove()
     }
+}
+function getOption(value) {
+    return document.querySelector(`#peers option[value="${CSS.escape(value)}"]`)
 }

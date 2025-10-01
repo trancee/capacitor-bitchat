@@ -559,13 +559,14 @@ class BluetoothMeshService(private val context: Context) {
         
         if (connectionManager.startServices()) {
             isActive = true
-            
+
+            delegate?.onStarted(myPeerID, true) // trancee
+
             // Start periodic announcements for peer discovery and connectivity
             sendPeriodicBroadcastAnnounce()
             Log.d(TAG, "Started periodic broadcast announcements (every 30 seconds)")
             // Start periodic syncs
             gossipSyncManager.start()
-            delegate?.onStarted(myPeerID, true) // trancee
         } else {
             Log.e(TAG, "Failed to start Bluetooth services")
             delegate?.onStarted(myPeerID, false) // trancee
@@ -609,8 +610,16 @@ class BluetoothMeshService(private val context: Context) {
     /**
      * Send public message
      */
+    // trancee
     fun sendMessage(content: String, mentions: List<String> = emptyList(), channel: String? = null) {
         if (content.isEmpty()) return
+
+        sendMessage(content.toByteArray(Charsets.UTF_8))
+    }
+    // trancee
+
+    fun sendMessage(bytes: ByteArray) { // trancee
+        if (bytes.isEmpty()) return // trancee
         
         serviceScope.launch {
             val packet = BitchatPacket(
@@ -619,7 +628,7 @@ class BluetoothMeshService(private val context: Context) {
                 senderID = hexStringToByteArray(myPeerID),
                 recipientID = SpecialRecipients.BROADCAST,
                 timestamp = System.currentTimeMillis().toULong(),
-                payload = content.toByteArray(Charsets.UTF_8),
+                payload = bytes, // trancee
                 signature = null,
                 ttl = MAX_TTL
             )
@@ -752,11 +761,16 @@ class BluetoothMeshService(private val context: Context) {
     fun sendPrivateMessage(content: String, recipientPeerID: String, recipientNickname: String, messageID: String? = null) {
         if (content.isEmpty() || recipientPeerID.isEmpty()) return
         if (recipientNickname.isEmpty()) return
-        
+
+        sendPrivateMessage(content.toByteArray(Charsets.UTF_8), recipientPeerID, messageID)
+    }
+    fun sendPrivateMessage(bytes: ByteArray, recipientPeerID: String, messageID: String? = null) {
+        if (bytes.isEmpty() || recipientPeerID.isEmpty()) return
+
         serviceScope.launch {
             val finalMessageID = messageID ?: java.util.UUID.randomUUID().toString()
             
-            Log.d(TAG, "📨 Sending PM to $recipientPeerID: ${content.take(30)}...")
+            Log.d(TAG, "📨 Sending PM to $recipientPeerID: ${bytes.take(30)}...")
             
             // Check if we have an established Noise session
             if (encryptionService.hasEstablishedSession(recipientPeerID)) {
@@ -764,7 +778,8 @@ class BluetoothMeshService(private val context: Context) {
                     // Create TLV-encoded private message exactly like iOS
                     val privateMessage = com.bitchat.android.model.PrivateMessagePacket(
                         messageID = finalMessageID,
-                        content = content
+                        content = "",
+                        bytes = bytes
                     )
                     
                     val tlvData = privateMessage.encode()
@@ -1212,7 +1227,7 @@ interface BluetoothMeshDelegate {
     fun isFavorite(peerID: String): Boolean
     // registerPeerPublicKey REMOVED - fingerprints now handled centrally in PeerManager
 
-    fun onStarted(peerID: String, success: Boolean)
+    fun onStarted(peerID: String, success: Boolean?)
     fun onStopped()
     fun onDeviceConnected(peerID: String)
     fun onDeviceDisconnected(peerID: String)
