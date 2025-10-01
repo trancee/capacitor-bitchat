@@ -4,11 +4,13 @@ import static com.getcapacitor.community.BitchatHelper.makeUUID;
 
 import android.content.Context;
 import android.util.Base64;
+import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.bitchat.android.mesh.BluetoothMeshDelegate;
 import com.bitchat.android.mesh.BluetoothMeshService;
 import com.bitchat.android.model.BitchatMessage;
+import com.bitchat.android.onboarding.BatteryOptimizationManager;
 import com.bitchat.android.onboarding.PermissionManager;
 import com.getcapacitor.community.classes.options.InitializeOptions;
 import com.getcapacitor.community.classes.options.SendOptions;
@@ -37,6 +39,9 @@ public class Bitchat {
     private final BitchatPlugin plugin;
 
     @NonNull
+    private final BatteryOptimizationManager batteryOptimizationManager;
+
+    @NonNull
     private final PermissionManager permissionManager;
 
     @NonNull
@@ -45,7 +50,16 @@ public class Bitchat {
     public Bitchat(@NonNull BitchatPlugin plugin) {
         this.plugin = plugin;
 
+        ComponentActivity activity = plugin.getActivity();
         Context context = plugin.getContext();
+
+        batteryOptimizationManager = new BatteryOptimizationManager(activity, context, () -> {
+            System.out.println("Battery optimization disabled");
+            return null;
+        }, (message) -> {
+            System.out.println("Battery optimization failed: " + message);
+            return null;
+        });
 
         // Initialize permission management
         permissionManager = new PermissionManager(context);
@@ -53,6 +67,11 @@ public class Bitchat {
         meshService = new BluetoothMeshService(context);
     }
 
+    public void requestDisableBatteryOptimization() {
+        if (permissionManager.isBatteryOptimizationSupported() && !permissionManager.isBatteryOptimizationDisabled()) {
+            batteryOptimizationManager.requestDisableBatteryOptimization();
+        }
+    }
     /**
      * Initialize
      */
@@ -60,11 +79,6 @@ public class Bitchat {
     public void initialize(@NonNull InitializeOptions options, @NonNull Callback callback) {
         if (!permissionManager.areAllPermissionsGranted()) {
             callback.error(new Exception(MISSING_PERMISSIONS));
-            return;
-        }
-
-        if (permissionManager.isBatteryOptimizationSupported() && !permissionManager.isBatteryOptimizationDisabled()) {
-            callback.error(new Exception(BATTERY_OPTIMIZATION_DISABLED));
             return;
         }
 
