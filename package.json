@@ -16,7 +16,7 @@
     "CapacitorTranceeBitchat.podspec"
   ],
   "author": "Philipp Grosswiler <philipp.grosswiler@gmail.com>",
-  "license": "MIT",
+  "license": "Unlicense",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trancee/capacitor-bitchat.git"
