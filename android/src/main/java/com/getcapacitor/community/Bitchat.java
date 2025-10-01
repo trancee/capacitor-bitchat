@@ -53,13 +53,18 @@ public class Bitchat {
         ComponentActivity activity = plugin.getActivity();
         Context context = plugin.getContext();
 
-        batteryOptimizationManager = new BatteryOptimizationManager(activity, context, () -> {
-            System.out.println("Battery optimization disabled");
-            return null;
-        }, (message) -> {
-            System.out.println("Battery optimization failed: " + message);
-            return null;
-        });
+        batteryOptimizationManager = new BatteryOptimizationManager(
+            activity,
+            context,
+            () -> {
+                System.out.println("Battery optimization disabled");
+                return null;
+            },
+            (message) -> {
+                System.out.println("Battery optimization failed: " + message);
+                return null;
+            }
+        );
 
         // Initialize permission management
         permissionManager = new PermissionManager(context);
@@ -67,11 +72,14 @@ public class Bitchat {
         meshService = new BluetoothMeshService(context);
     }
 
-    public void requestDisableBatteryOptimization() {
-        if (permissionManager.isBatteryOptimizationSupported() && !permissionManager.isBatteryOptimizationDisabled()) {
-            batteryOptimizationManager.requestDisableBatteryOptimization();
-        }
+    public boolean isBatteryOptimizationDisabled() {
+        return batteryOptimizationManager.isBatteryOptimizationDisabled();
     }
+
+    public void requestDisableBatteryOptimization() {
+        batteryOptimizationManager.requestDisableBatteryOptimization();
+    }
+
     /**
      * Initialize
      */

@@ -3,7 +3,6 @@ package com.getcapacitor.community;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.os.Build;
-
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -24,45 +23,43 @@ import com.getcapacitor.community.classes.options.InitializeOptions;
 import com.getcapacitor.community.classes.options.SendOptions;
 import com.getcapacitor.community.classes.options.StartOptions;
 import com.getcapacitor.community.interfaces.Callback;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.json.JSONException;
 
 @CapacitorPlugin(
-        name = "Bitchat",
-        permissions = {
-                @Permission(
-                        strings = {
-                                // Required to be able to discover and pair nearby Bluetooth devices.
-                                Manifest.permission.BLUETOOTH_SCAN,
-                                // Required to be able to advertise to nearby Bluetooth devices.
-                                Manifest.permission.BLUETOOTH_ADVERTISE,
-                                // Required to be able to connect to paired Bluetooth devices.
-                                Manifest.permission.BLUETOOTH_CONNECT
-                        },
-                        alias = "bluetooth"
-                ),
-                @Permission(
-                        strings = {
-                                // Allows an app to access approximate location.
-                                Manifest.permission.ACCESS_COARSE_LOCATION,
-                                // Allows an app to access precise location.
-                                Manifest.permission.ACCESS_FINE_LOCATION
-                        },
-                        alias = "location"
-                ),
-                @Permission(
-                        strings = {
-                                // Allows an app to access precise location.
-                                Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                        },
-                        alias = "battery"
-                )
-        }
+    name = "Bitchat",
+    permissions = {
+        @Permission(
+            strings = {
+                // Required to be able to discover and pair nearby Bluetooth devices.
+                Manifest.permission.BLUETOOTH_SCAN,
+                // Required to be able to advertise to nearby Bluetooth devices.
+                Manifest.permission.BLUETOOTH_ADVERTISE,
+                // Required to be able to connect to paired Bluetooth devices.
+                Manifest.permission.BLUETOOTH_CONNECT
+            },
+            alias = "bluetooth"
+        ),
+        @Permission(
+            strings = {
+                // Allows an app to access approximate location.
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                // Allows an app to access precise location.
+                Manifest.permission.ACCESS_FINE_LOCATION
+            },
+            alias = "location"
+        ),
+        @Permission(
+            strings = {
+                // Allows an app to ignore battery optimizations.
+                Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+            },
+            alias = "battery"
+        )
+    }
 )
 public class BitchatPlugin extends Plugin {
 
@@ -98,8 +95,7 @@ public class BitchatPlugin extends Plugin {
 
     @PluginMethod
     public void initialize(PluginCall call) {
-        Callback callback = new Callback(call) {
-        };
+        Callback callback = new Callback(call) {};
 
         try {
             InitializeOptions options = new InitializeOptions(call);
@@ -112,8 +108,7 @@ public class BitchatPlugin extends Plugin {
 
     @PluginMethod
     public void isInitialized(PluginCall call) {
-        Callback callback = new Callback(call) {
-        };
+        Callback callback = new Callback(call) {};
 
         try {
             implementation.isInitialized(callback);
@@ -124,8 +119,7 @@ public class BitchatPlugin extends Plugin {
 
     @PluginMethod
     public void start(PluginCall call) {
-        Callback callback = new Callback(call) {
-        };
+        Callback callback = new Callback(call) {};
 
         try {
             StartOptions options = new StartOptions(call);
@@ -138,8 +132,7 @@ public class BitchatPlugin extends Plugin {
 
     @PluginMethod
     public void isStarted(PluginCall call) {
-        Callback callback = new Callback(call) {
-        };
+        Callback callback = new Callback(call) {};
 
         try {
             implementation.isStarted(callback);
@@ -150,8 +143,7 @@ public class BitchatPlugin extends Plugin {
 
     @PluginMethod
     public void stop(PluginCall call) {
-        Callback callback = new Callback(call) {
-        };
+        Callback callback = new Callback(call) {};
 
         try {
             implementation.stop(callback);
@@ -166,8 +158,7 @@ public class BitchatPlugin extends Plugin {
 
     @PluginMethod
     public void send(PluginCall call) {
-        Callback callback = new Callback(call) {
-        };
+        Callback callback = new Callback(call) {};
 
         try {
             SendOptions options = new SendOptions(call);
@@ -196,6 +187,11 @@ public class BitchatPlugin extends Plugin {
 
             for (Map.Entry<String, PermissionState> entry : permissionsResult.entrySet()) {
                 if (aliases.contains(entry.getKey())) {
+                    if (entry.getKey().equals("battery")) {
+                        boolean isIgnoring = implementation.isBatteryOptimizationDisabled();
+                        result.put(entry.getKey(), isIgnoring ? "granted" : "prompt");
+                        continue;
+                    }
                     result.put(entry.getKey(), entry.getValue());
                 }
             }
@@ -224,6 +220,11 @@ public class BitchatPlugin extends Plugin {
         // SDK >= 31
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             aliases.add("location");
+        }
+
+        // SDK >= 23
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            aliases.add("battery");
         }
 
         return aliases;
@@ -265,6 +266,14 @@ public class BitchatPlugin extends Plugin {
                             // SDK >= 31
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 aliases.add("location");
+                            }
+                            break;
+                        case "battery":
+                            // SDK >= 23
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                aliases.add("battery");
+
+                                implementation.requestDisableBatteryOptimization();
                             }
                             break;
                     }

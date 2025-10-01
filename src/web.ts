@@ -63,6 +63,7 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
     return {
       bluetooth: (await navigator.bluetooth.getAvailability()) ? 'prompt' : 'denied', // (await navigator.permissions.query({ name: 'bluetooth' })).state,
       location: (await navigator.permissions.query({ name: 'geolocation' })).state,
+      // battery: 'prompt',
     };
   }
   async requestPermissions(options?: Permissions): Promise<PermissionStatus> {
@@ -90,6 +91,9 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
           },
         );
       });
+    }
+    if (options?.permissions?.includes('battery')) {
+      permissionStatus.battery = 'granted';
     }
     return permissionStatus;
   }

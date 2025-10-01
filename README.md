@@ -314,6 +314,7 @@ removeAllListeners() => Promise<void>
 | --------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | **`bluetooth`** | <code><a href="#permissionstate">PermissionState</a></code> | `BLUETOOTH_ADVERTISE` Required to be able to advertise to nearby Bluetooth devices. `BLUETOOTH_CONNECT` Required to be able to connect to paired Bluetooth devices. `BLUETOOTH_SCAN` Required to be able to discover and pair nearby Bluetooth devices. `BLUETOOTH` Allows applications to connect to paired bluetooth devices. `BLUETOOTH_ADMIN` Allows applications to discover and pair bluetooth devices. | 0.1.0 |
 | **`location`**  | <code><a href="#permissionstate">PermissionState</a></code> | `ACCESS_FINE_LOCATION` Allows an app to access precise location. `ACCESS_COARSE_LOCATION` Allows an app to access approximate location. ![Android](assets/android.svg) Only available for Android.                                                                                                                                                                                                            | 0.1.0 |
+| **`battery`**   | <code><a href="#permissionstate">PermissionState</a></code> | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` Allows an app to ignore battery optimizations. ![Android](assets/android.svg) Only available for Android.                                                                                                                                                                                                                                                              | 0.1.0 |
 
 
 #### Permissions
@@ -406,7 +407,7 @@ removeAllListeners() => Promise<void>
 
 #### PermissionType
 
-<code>'bluetooth' | 'location'</code>
+<code>'bluetooth' | 'location' | 'battery'</code>
 
 
 #### OnStartedListener

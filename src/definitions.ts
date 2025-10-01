@@ -66,8 +66,16 @@ export interface PermissionStatus {
    * @since 0.1.0
    */
   location?: PermissionState;
+  /**
+   * `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`  Allows an app to ignore battery optimizations.
+   *
+   * ![Android](assets/android.svg) Only available for Android.
+   *
+   * @since 0.1.0
+   */
+  battery?: PermissionState;
 }
-export type PermissionType = 'bluetooth' | 'location';
+export type PermissionType = 'bluetooth' | 'location' | 'battery';
 export interface Permissions {
   permissions?: PermissionType[];
 }
