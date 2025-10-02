@@ -28,7 +28,7 @@ window.testInitialize = async () => {
     const peerID = result.peerID
 
     if (peerID)
-        document.getElementById("peerID").value = peerID    
+        document.getElementById("peerID").value = peerID
 }
 
 window.testIsInitialized = async () => {
@@ -44,7 +44,7 @@ window.testStart = async () => {
     //     options.peerID = document.getElementById("peerID").value
     // }
     if (document.getElementById("announcement") && document.getElementById("announcement").value.length > 0) {
-        options.data = document.getElementById("announcement").value
+        options.message = document.getElementById("announcement").value
     }
 
     const result = await window.execute("start", options)
@@ -70,8 +70,8 @@ window.testStop = async () => {
 window.testSend = async () => {
     const options = {}
 
-    if (document.getElementById("data") && document.getElementById("data").value.length > 0) {
-        options.data = document.getElementById("data").value
+    if (document.getElementById("message") && document.getElementById("message").value.length > 0) {
+        options.message = document.getElementById("message").value
     }
     if (document.getElementById("peers") && document.getElementById("peers").value.length) {
         options.peerID = document.getElementById("peers").value
@@ -167,7 +167,7 @@ window.addListeners = async () => {
                 logEvent(`onReceived(${JSON.stringify(event) || ""})`)
 
                 const messageID = event.messageID
-                const data = event.data
+                const message = event.message
                 const peerID = event.peerID
             }),
 
@@ -177,6 +177,10 @@ window.addListeners = async () => {
 
                 const peerID = event.peerID
                 const rssi = event.rssi
+
+                const option = getOption(peerID)
+                if (option) 
+                    option.text = `${peerID} [${rssi} dBm]`
             }),
         await Bitchat.addListener('onPeerListUpdated',
             (event) => {
@@ -185,7 +189,7 @@ window.addListeners = async () => {
                 const peers = event.peers
 
                 const removePeers = {}
-                
+
                 for (const option of document.querySelector("#peers").options) {
                     removePeers[option.value] = true
                 }

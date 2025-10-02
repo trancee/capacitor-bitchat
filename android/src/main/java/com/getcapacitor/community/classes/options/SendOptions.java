@@ -7,23 +7,23 @@ import com.getcapacitor.PluginCall;
 public class SendOptions {
 
     @Nullable
-    private byte[] data;
+    private byte[] message;
 
     @Nullable
     private String peerID;
 
     public SendOptions(PluginCall call) {
         @Nullable
-        String data = call.getString("data");
-        this.setData(data);
+        String message = call.getString("message");
+        this.setMessage(message);
 
         @Nullable
         String peerID = call.getString("peerID");
         this.setPeerID(peerID);
     }
 
-    private void setData(@Nullable String data) {
-        this.data = (data == null || data.isEmpty()) ? null : Base64.decode(data, Base64.NO_WRAP);
+    private void setMessage(@Nullable String message) {
+        this.message = (message == null || message.isEmpty()) ? null : Base64.decode(message, Base64.NO_WRAP);
     }
 
     private void setPeerID(@Nullable String peerID) {
@@ -31,8 +31,8 @@ public class SendOptions {
     }
 
     @Nullable
-    public byte[] getData() {
-        return data;
+    public byte[] getMessage() {
+        return message;
     }
 
     @Nullable

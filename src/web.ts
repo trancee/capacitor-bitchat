@@ -1,7 +1,8 @@
 import { WebPlugin } from '@capacitor/core';
 
-import { ID, UUID } from './definitions';
 import type {
+  ID,
+  UUID,
   BitchatPlugin,
   InitializeOptions,
   InitializeResult,
@@ -17,12 +18,13 @@ import type {
 
 let isInitialized = false;
 let isStarted = false;
-const peerID = ID('0011223344556677');
+const peerID = getID();
 
 export class BitchatWeb extends WebPlugin implements BitchatPlugin {
   async initialize(options?: InitializeOptions): Promise<InitializeResult> {
     console.info('initialize', options ?? '');
     isInitialized = true;
+    this.notifyListeners('onPeerListUpdated', { peers: [peerID] });
     return { peerID };
   }
   async isInitialized(): Promise<IsInitializedResult> {
@@ -37,8 +39,12 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
     }
     isStarted = true;
     this.notifyListeners('onStarted', { peerID, isStarted });
-    this.notifyListeners('onRSSIUpdated', { peerID, rssi: -42 });
-    this.notifyListeners('onPeerListUpdated', { peers: [peerID] });
+    const message = options?.message;
+    if (message) {
+      const messageID = getUUID();
+      this.notifyListeners('onSent', { messageID });
+    }
+    this.notifyListeners('onRSSIUpdated', { peerID, rssi: getRSSI() });
     return { peerID };
   }
   async isStarted(): Promise<IsStartedResult> {
@@ -57,8 +63,15 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
     if (!isStarted) {
       throw new Error('not started');
     }
-    const messageID = UUID('123e4567-e89b-12d3-a456-426614174000');
-    this.notifyListeners('onSent', { messageID });
+    const message = options.message;
+    if (!message) {
+      throw new Error('missing payload');
+    }
+    const messageID = getUUID();
+    const recipientPeerID = options?.peerID;
+    this.notifyListeners('onSent', { messageID, recipientPeerID });
+    this.notifyListeners('onRSSIUpdated', { peerID, rssi: getRSSI() });
+    options.peerID = recipientPeerID || peerID;
     this.notifyListeners('onReceived', { messageID, ...options });
     return { messageID };
   }
@@ -102,4 +115,37 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
     }
     return permissionStatus;
   }
+}
+
+function getID(): ID {
+  return (Math.floor(Math.random() * 0xffffffff)
+    .toString(16)
+    .padEnd(8, '0') +
+    Math.floor(Math.random() * 0xffffffff)
+      .toString(16)
+      .padEnd(8, '0')) as ID;
+}
+function getUUID(): UUID {
+  return (Math.floor(Math.random() * 0xffffffff)
+    .toString(16)
+    .padEnd(8, '0') +
+    '-' +
+    Math.floor(Math.random() * 0xffff)
+      .toString(16)
+      .padEnd(4, '0') +
+    '-' +
+    Math.floor(Math.random() * 0xffff)
+      .toString(16)
+      .padEnd(4, '0') +
+    '-' +
+    Math.floor(Math.random() * 0xffff)
+      .toString(16)
+      .padEnd(4, '0') +
+    '-' +
+    Math.floor(Math.random() * 0xffffffffffff)
+      .toString(16)
+      .padEnd(12, '0')) as UUID;
+}
+function getRSSI(): number {
+  return Math.floor(Math.random() * -100);
 }

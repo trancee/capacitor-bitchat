@@ -3,7 +3,6 @@ package com.getcapacitor.community;
 import static com.getcapacitor.community.BitchatHelper.makeUUID;
 
 import android.content.Context;
-import android.util.Base64;
 import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,6 +20,7 @@ import com.getcapacitor.community.classes.results.IsStartedResult;
 import com.getcapacitor.community.classes.results.SendResult;
 import com.getcapacitor.community.classes.results.StartResult;
 import com.getcapacitor.community.interfaces.Callback;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import kotlin.Unit;
@@ -29,7 +29,6 @@ import org.jetbrains.annotations.NotNull;
 public class Bitchat {
 
     private final String MISSING_PERMISSIONS = "missing permissions";
-    private final String BATTERY_OPTIMIZATION_DISABLED = "battery optimization disabled";
     private final String NOT_INITIALIZED = "not initialized";
     private final String NOT_STARTED = "not started";
     private final String MISSING_PAYLOAD = "missing payload";
@@ -78,11 +77,6 @@ public class Bitchat {
      */
 
     public void initialize(@NonNull InitializeOptions options, @NonNull Callback callback) {
-        if (!permissionManager.areAllPermissionsGranted()) {
-            callback.error(new Exception(MISSING_PERMISSIONS));
-            return;
-        }
-
         meshService.setDelegate(
             new BluetoothMeshDelegate() {
                 @Override
@@ -105,9 +99,11 @@ public class Bitchat {
                     String messageID = message.getId();
                     String content = message.getContent();
                     String peerID = message.getSenderPeerID();
-                    byte[] data = Base64.decode(content, Base64.NO_WRAP);
 
-                    plugin.onReceivedEvent(makeUUID(messageID), data, peerID);
+                    Boolean isPrivate = message.isPrivate();
+                    Boolean isRelay = message.isRelay();
+
+                    plugin.onReceivedEvent(makeUUID(messageID), content.getBytes(), peerID, isPrivate, isRelay);
                 }
 
                 @Override
@@ -158,14 +154,12 @@ public class Bitchat {
 
                 @Override
                 public void onRSSIUpdated(@NotNull String peerID, int rssi) {
-                    plugin.onRSSIUpdatedEvent(peerID, rssi);
+                    //plugin.onRSSIUpdatedEvent(peerID, rssi);
                 }
 
                 @Override
                 public void onPeerInfoUpdated(@NotNull String peerID, @NotNull String nickname) {
-                    byte[] data = Base64.decode(nickname, Base64.NO_WRAP);
-
-                    plugin.onReceivedEvent(null, data, peerID);
+                    plugin.onReceivedEvent(nickname.getBytes(), peerID);
                 }
 
                 @Override
@@ -194,11 +188,17 @@ public class Bitchat {
             return;
         }
 
-        @Nullable
-        byte[] data = options.getData();
+        if (!permissionManager.areAllPermissionsGranted()) {
+            callback.error(new Exception(MISSING_PERMISSIONS));
+            return;
+        }
 
-        if (data != null) {
-            nickname = Base64.encodeToString(data, Base64.NO_WRAP);
+        @Nullable
+        byte[] message = options.getMessage();
+
+        if (message != null) {
+            //nickname = Base64.encodeToString(message, Base64.NO_WRAP);
+            nickname = new String(message);
         }
 
         meshService.startServices();
@@ -235,9 +235,9 @@ public class Bitchat {
         }
 
         @Nullable
-        byte[] data = options.getData();
+        byte[] message = options.getMessage();
 
-        if (data == null) {
+        if (message == null) {
             callback.error(new Exception(MISSING_PAYLOAD));
             return;
         }
@@ -248,9 +248,11 @@ public class Bitchat {
         String peerID = options.getPeerID();
 
         if (peerID == null) {
-            meshService.sendMessage(data);
+            meshService.sendMessage(message);
+            //meshService.sendMessage(new String(message), Collections.emptyList(), null);
         } else {
-            meshService.sendPrivateMessage(data, peerID, messageID.toString());
+            meshService.sendPrivateMessage(message, peerID, messageID.toString());
+            //meshService.sendPrivateMessage(new String(message), peerID, "", messageID.toString());
         }
 
         SendResult result = new SendResult(messageID);

@@ -117,13 +117,13 @@ class BluetoothMeshService(private val context: Context) {
     }
 
     /**
-     * Send broadcast announcement every 30 seconds
+     * Send broadcast announcement every 10 seconds
      */
     private fun sendPeriodicBroadcastAnnounce() {
         serviceScope.launch {
             while (isActive) {
                 try {
-                    delay(30000) // 30 seconds
+                    delay(10000) // 10 seconds
                     sendBroadcastAnnounce()
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in periodic broadcast announce: ${e.message}")
@@ -154,6 +154,7 @@ class BluetoothMeshService(private val context: Context) {
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to remove Noise session for $peerID: ${e.message}")
                 }
+                delegate?.onDeviceDisconnected(peerID) // trancee
             }
         }
         

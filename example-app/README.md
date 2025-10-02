@@ -10,3 +10,11 @@ To run the provided example, you can use `npm start` command.
 ```bash
 npm start
 ```
+
+# Test Sample
+
+```bash
+echo -en "BEGIN\0My App\nTest\0END" > test.bin
+base64 < test.bin
+QkVHSU4ATXkgQXBwClRlc3QARU5E
+```

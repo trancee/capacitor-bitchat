@@ -320,9 +320,9 @@ removeAllListeners() => Promise<void>
 
 #### StartOptions
 
-| Prop       | Type                                      | Since |
-| ---------- | ----------------------------------------- | ----- |
-| **`data`** | <code><a href="#base64">Base64</a></code> | 0.1.1 |
+| Prop          | Type                                      | Since |
+| ------------- | ----------------------------------------- | ----- |
+| **`message`** | <code><a href="#base64">Base64</a></code> | 0.1.1 |
 
 
 #### IsStartedResult
@@ -341,10 +341,10 @@ removeAllListeners() => Promise<void>
 
 #### SendOptions
 
-| Prop         | Type                                      |
-| ------------ | ----------------------------------------- |
-| **`data`**   | <code><a href="#base64">Base64</a></code> |
-| **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
+| Prop          | Type                                      |
+| ------------- | ----------------------------------------- |
+| **`message`** | <code><a href="#base64">Base64</a></code> |
+| **`peerID`**  | <code><a href="#peerid">PeerID</a></code> |
 
 
 #### PermissionStatus
@@ -405,7 +405,7 @@ removeAllListeners() => Promise<void>
 | Prop            | Type                                            |
 | --------------- | ----------------------------------------------- |
 | **`messageID`** | <code><a href="#messageid">MessageID</a></code> |
-| **`data`**      | <code><a href="#base64">Base64</a></code>       |
+| **`message`**   | <code><a href="#base64">Base64</a></code>       |
 | **`peerID`**    | <code><a href="#peerid">PeerID</a></code>       |
 
 

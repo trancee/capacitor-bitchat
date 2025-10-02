@@ -46,7 +46,7 @@ export interface StartOptions {
   /**
    * @since 0.1.1
    */
-  data?: Base64;
+  message?: Base64;
 }
 export interface StartResult {
   /**
@@ -58,12 +58,63 @@ export interface IsStartedResult {
   isStarted?: boolean;
 }
 export interface SendOptions {
-  data: Base64;
+  message: Base64;
   peerID?: PeerID;
 }
 export interface SendResult {
   messageID: MessageID;
 }
+
+// Listeners
+
+export type OnStartedListener = (event: OnStartedEvent) => void;
+export interface OnStartedEvent {
+  /**
+   * @since 0.1.0
+   */
+  peerID: PeerID;
+  /**
+   * @since 0.1.1
+   */
+  isStarted?: boolean;
+}
+export type OnStoppedListener = (event: void) => void;
+export type OnConnectedListener = (event: OnConnectedEvent) => void;
+export interface OnConnectedEvent {
+  peerID: PeerID;
+}
+export type OnDisconnectedListener = (event: OnDisconnectedEvent) => void;
+export interface OnDisconnectedEvent {
+  peerID: PeerID;
+}
+export type OnSentListener = (event: OnSentEvent) => void;
+export interface OnSentEvent {
+  messageID: MessageID;
+  /**
+   * @since 0.1.2
+   */
+  peerID?: PeerID;
+}
+export type OnReceivedListener = (event: OnReceivedEvent) => void;
+export interface OnReceivedEvent {
+  messageID?: MessageID;
+  message: Base64;
+  peerID?: PeerID;
+}
+export type OnRSSIUpdatedListener = (event: OnRSSIUpdatedEvent) => void;
+export interface OnRSSIUpdatedEvent {
+  peerID: PeerID;
+  rssi: number;
+}
+export type OnPeerListUpdatedListener = (event: OnPeerListUpdatedEvent) => void;
+export interface OnPeerListUpdatedEvent {
+  /**
+   * @since 0.1.1
+   */
+  peers: PeerID[];
+}
+
+// Permissions
 
 export interface PermissionStatus {
   /**
@@ -98,53 +149,6 @@ export interface PermissionStatus {
 export type PermissionType = 'bluetooth' | 'location' | 'battery';
 export interface Permissions {
   permissions?: PermissionType[];
-}
-
-export type OnStartedListener = (event: OnStartedEvent) => void;
-export interface OnStartedEvent {
-  /**
-   * @since 0.1.0
-   */
-  peerID: PeerID;
-  /**
-   * @since 0.1.1
-   */
-  isStarted?: boolean;
-}
-export type OnStoppedListener = (event: void) => void;
-export type OnConnectedListener = (event: OnConnectedEvent) => void;
-export interface OnConnectedEvent {
-  peerID: PeerID;
-}
-export type OnDisconnectedListener = (event: OnDisconnectedEvent) => void;
-export interface OnDisconnectedEvent {
-  peerID: PeerID;
-}
-export type OnSentListener = (event: OnSentEvent) => void;
-export interface OnSentEvent {
-  messageID: MessageID;
-  /**
-   * @since 0.1.2
-   */
-  peerID?: PeerID;
-}
-export type OnReceivedListener = (event: OnReceivedEvent) => void;
-export interface OnReceivedEvent {
-  messageID?: MessageID;
-  data: Base64;
-  peerID?: PeerID;
-}
-export type OnRSSIUpdatedListener = (event: OnRSSIUpdatedEvent) => void;
-export interface OnRSSIUpdatedEvent {
-  peerID: PeerID;
-  rssi: number;
-}
-export type OnPeerListUpdatedListener = (event: OnPeerListUpdatedEvent) => void;
-export interface OnPeerListUpdatedEvent {
-  /**
-   * @since 0.1.1
-   */
-  peers: PeerID[];
 }
 
 // Helpers

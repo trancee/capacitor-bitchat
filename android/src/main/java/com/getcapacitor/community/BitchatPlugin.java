@@ -332,8 +332,12 @@ public class BitchatPlugin extends Plugin {
         notifyListeners(SENT_EVENT, event.toJSObject());
     }
 
-    protected void onReceivedEvent(UUID messageID, byte[] data, String peerID) {
-        ReceivedEvent event = new ReceivedEvent(messageID, data, peerID);
+    protected void onReceivedEvent(byte[] message, String peerID) {
+        onReceivedEvent(null, message, peerID, null, null);
+    }
+
+    protected void onReceivedEvent(UUID messageID, byte[] message, String peerID, Boolean isPrivate, Boolean isRelay) {
+        ReceivedEvent event = new ReceivedEvent(messageID, message, peerID, isPrivate, isRelay);
 
         notifyListeners(RECEIVED_EVENT, event.toJSObject());
     }
