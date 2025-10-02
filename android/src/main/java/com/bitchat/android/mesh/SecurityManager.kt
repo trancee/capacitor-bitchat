@@ -5,7 +5,6 @@ import com.bitchat.android.crypto.EncryptionService
 import com.bitchat.android.protocol.BitchatPacket
 import com.bitchat.android.protocol.MessageType
 import com.bitchat.android.model.RoutedPacket
-//import com.bitchat.android.util.toHexString
 import kotlinx.coroutines.*
 import java.util.*
 import kotlin.collections.mutableSetOf

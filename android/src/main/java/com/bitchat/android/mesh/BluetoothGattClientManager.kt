@@ -15,8 +15,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlinx.coroutines.Job
-//import com.bitchat.android.ui.debug.DebugSettingsManager
-//import com.bitchat.android.ui.debug.DebugScanResult
 
 /**
  * Manages GATT client operations, scanning, and client-side connections
@@ -81,15 +79,6 @@ class BluetoothGattClientManager(
      * Start client manager
      */
     fun start(): Boolean {
-        /*
-        // Respect debug setting
-        try {
-            if (!com.bitchat.android.ui.debug.DebugSettingsManager.getInstance().gattClientEnabled.value) {
-                Log.i(TAG, "Client start skipped: GATT Client disabled in debug settings")
-                return false
-            }
-        } catch (_: Exception) { }
-        */
         if (isActive) {
             Log.d(TAG, "GATT client already active; start is a no-op")
             return true
@@ -336,36 +325,10 @@ class BluetoothGattClientManager(
         
         // Store RSSI from scan results for later use (especially for server connections)
         connectionTracker.updateScanRSSI(deviceAddress, rssi)
-        /*
-        // Publish scan result to debug UI buffer
-        try {
-            DebugSettingsManager.getInstance().addScanResult(
-                DebugScanResult(
-                    deviceName = device.name,
-                    deviceAddress = deviceAddress,
-                    rssi = rssi,
-                    peerID = null // peerID unknown at scan time
-                )
-            )
-        } catch (_: Exception) { }
-        */
+
         // Power-aware RSSI filtering
         if (rssi < powerManager.getRSSIThreshold()) {
             Log.d(TAG, "Skipping device $deviceAddress due to weak signal: $rssi < ${powerManager.getRSSIThreshold()}")
-            /*
-            // Even if we skip connecting, still publish scan result to debug UI
-            try {
-                val pid: String? = null // We don't know peerID until packet exchange
-                DebugSettingsManager.getInstance().addScanResult(
-                    DebugScanResult(
-                        deviceName = device.name,
-                        deviceAddress = deviceAddress,
-                        rssi = rssi,
-                        peerID = pid
-                    )
-                )
-            } catch (_: Exception) { }
-            */
             return
         }
         

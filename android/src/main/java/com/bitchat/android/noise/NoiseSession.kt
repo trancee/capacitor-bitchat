@@ -2,7 +2,6 @@ package com.bitchat.android.noise
 
 import android.util.Log
 import com.bitchat.android.noise.southernstorm.protocol.*
-//import com.bitchat.android.util.toHexString
 import java.security.SecureRandom
 
 

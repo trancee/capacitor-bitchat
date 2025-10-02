@@ -10,7 +10,6 @@ import android.util.Log
 import com.bitchat.android.protocol.SpecialRecipients
 import com.bitchat.android.model.RoutedPacket
 import com.bitchat.android.protocol.MessageType
-//import com.bitchat.android.util.toHexString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -75,21 +74,6 @@ class BluetoothPacketBroadcaster(
             val fromNick = incomingPeer?.let { nicknameResolver?.invoke(it) }
             val toNick = toPeer?.let { nicknameResolver?.invoke(it) }
             val isRelay = (incomingAddr != null || incomingPeer != null)
-            /*
-            com.bitchat.android.ui.debug.DebugSettingsManager.getInstance().logPacketRelayDetailed(
-                packetType = typeName,
-                senderPeerID = senderPeerID,
-                senderNickname = senderNick,
-                fromPeerID = incomingPeer,
-                fromNickname = fromNick,
-                fromDeviceAddress = incomingAddr,
-                toPeerID = toPeer,
-                toNickname = toNick,
-                toDeviceAddress = toDeviceAddress,
-                ttl = ttl,
-                isRelay = isRelay
-            )
-            */
         } catch (_: Exception) { 
             // Silently ignore debug logging failures
         }
