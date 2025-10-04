@@ -100,8 +100,7 @@ data class NoisePayload(
 @Parcelize
 data class PrivateMessagePacket(
     val messageID: String,
-    val content: String,
-    val bytes: ByteArray? // trancee
+    val content: String
 ) : Parcelable {
 
     /**
@@ -124,7 +123,7 @@ data class PrivateMessagePacket(
      */
     fun encode(): ByteArray? {
         val messageIDData = messageID.toByteArray(Charsets.UTF_8)
-        val contentData = bytes ?: content.toByteArray(Charsets.UTF_8) // trancee
+        val contentData = content.toByteArray(Charsets.UTF_8)
         
         // Check size limits (TLV length field is 1 byte = max 255)
         if (messageIDData.size > 255 || contentData.size > 255) {
@@ -154,7 +153,6 @@ data class PrivateMessagePacket(
             var offset = 0
             var messageID: String? = null
             var content: String? = null
-            var bytes: ByteArray? = null // trancee
             
             while (offset + 2 <= data.size) {
                 // Read TLV type
@@ -179,13 +177,12 @@ data class PrivateMessagePacket(
                     }
                     TLVType.CONTENT -> {
                         content = String(value, Charsets.UTF_8)
-                        bytes = value // trancee
                     }
                 }
             }
             
             return if (messageID != null && content != null) {
-                PrivateMessagePacket(messageID, content, bytes) // trancee
+                PrivateMessagePacket(messageID, content)
             } else {
                 null
             }

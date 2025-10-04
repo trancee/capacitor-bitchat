@@ -1,13 +1,12 @@
 package com.getcapacitor.community.classes.options;
 
-import android.util.Base64;
 import androidx.annotation.Nullable;
 import com.getcapacitor.PluginCall;
 
 public class SendOptions {
 
     @Nullable
-    private byte[] message;
+    private String message;
 
     @Nullable
     private String peerID;
@@ -23,7 +22,7 @@ public class SendOptions {
     }
 
     private void setMessage(@Nullable String message) {
-        this.message = (message == null || message.isEmpty()) ? null : Base64.decode(message, Base64.NO_WRAP);
+        this.message = message;
     }
 
     private void setPeerID(@Nullable String peerID) {
@@ -31,7 +30,7 @@ public class SendOptions {
     }
 
     @Nullable
-    public byte[] getMessage() {
+    public String getMessage() {
         return message;
     }
 

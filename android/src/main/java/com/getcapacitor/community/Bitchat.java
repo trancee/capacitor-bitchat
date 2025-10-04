@@ -20,11 +20,11 @@ import com.getcapacitor.community.classes.results.IsStartedResult;
 import com.getcapacitor.community.classes.results.SendResult;
 import com.getcapacitor.community.classes.results.StartResult;
 import com.getcapacitor.community.interfaces.Callback;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import kotlin.Unit;
-import org.jetbrains.annotations.NotNull;
 
 public class Bitchat {
 
@@ -80,12 +80,12 @@ public class Bitchat {
         meshService.setDelegate(
             new BluetoothMeshDelegate() {
                 @Override
-                public void didReceiveChannelLeave(@NotNull String channel, @NotNull String fromPeer) {
+                public void didReceiveChannelLeave(@NonNull String channel, @NonNull String fromPeer) {
                     System.out.println("didReceiveChannelLeave: " + channel + ", " + fromPeer);
                 }
 
                 @Override
-                public void didReceiveReadReceipt(@NotNull String messageID, @NotNull String recipientPeerID) {
+                public void didReceiveReadReceipt(@NonNull String messageID, @NonNull String recipientPeerID) {
                     System.out.println("didReceiveReadReceipt: " + messageID + ", " + recipientPeerID);
                 }
 
@@ -95,7 +95,7 @@ public class Bitchat {
                 }
 
                 @Override
-                public void didReceiveMessage(@NotNull BitchatMessage message) {
+                public void didReceiveMessage(@NonNull BitchatMessage message) {
                     String messageID = message.getId();
                     String content = message.getContent();
                     String peerID = message.getSenderPeerID();
@@ -103,33 +103,33 @@ public class Bitchat {
                     Boolean isPrivate = message.isPrivate();
                     Boolean isRelay = message.isRelay();
 
-                    plugin.onReceivedEvent(makeUUID(messageID), content.getBytes(), peerID, isPrivate, isRelay);
+                    plugin.onReceivedEvent(makeUUID(messageID), content, peerID, isPrivate, isRelay);
                 }
 
                 @Override
-                public String decryptChannelMessage(@NotNull byte[] encryptedContent, @NotNull String channel) {
-                    System.out.println("decryptChannelMessage: " + encryptedContent + ", " + channel);
+                public String decryptChannelMessage(@NonNull byte[] encryptedContent, @NonNull String channel) {
+                    System.out.println("decryptChannelMessage: " + Arrays.toString(encryptedContent) + ", " + channel);
                     return "";
                 }
 
                 @Override
-                public void didReceiveDeliveryAck(@NotNull String messageID, @NotNull String recipientPeerID) {
+                public void didReceiveDeliveryAck(@NonNull String messageID, @NonNull String recipientPeerID) {
                     System.out.println("didReceiveDeliveryAck: " + messageID + ", " + recipientPeerID);
                 }
 
                 @Override
-                public void didUpdatePeerList(@NotNull List<String> peers) {
+                public void didUpdatePeerList(@NonNull List<String> peers) {
                     plugin.onPeerListUpdatedEvent(peers);
                 }
 
                 @Override
-                public boolean isFavorite(@NotNull String peerID) {
+                public boolean isFavorite(@NonNull String peerID) {
                     System.out.println("isFavorite: " + peerID);
                     return false;
                 }
 
                 @Override
-                public void onStarted(@NotNull String peerID, @Nullable Boolean success) {
+                public void onStarted(@NonNull String peerID, @Nullable Boolean success) {
                     isStarted = success != null && success;
 
                     plugin.onStartedEvent(peerID, success);
@@ -143,27 +143,39 @@ public class Bitchat {
                 }
 
                 @Override
-                public void onDeviceConnected(@NotNull String peerID) {
+                public void onFound(@NonNull String peerID) {
+                    establishNoiseSessionIfNeeded(peerID);
+
+                    plugin.onFoundEvent(peerID);
+                }
+
+                @Override
+                public void onLost(@NonNull String peerID) {
+                    plugin.onLostEvent(peerID);
+                }
+
+                @Override
+                public void onConnected(@NonNull String peerID) {
                     plugin.onConnectedEvent(peerID);
                 }
 
                 @Override
-                public void onDeviceDisconnected(@NotNull String peerID) {
+                public void onDisconnected(@NonNull String peerID) {
                     plugin.onDisconnectedEvent(peerID);
                 }
 
                 @Override
-                public void onRSSIUpdated(@NotNull String peerID, int rssi) {
-                    //plugin.onRSSIUpdatedEvent(peerID, rssi);
+                public void onRSSIUpdated(@NonNull String peerID, int rssi) {
+                    plugin.onRSSIUpdatedEvent(peerID, rssi);
                 }
 
                 @Override
-                public void onPeerInfoUpdated(@NotNull String peerID, @NotNull String nickname) {
-                    plugin.onReceivedEvent(nickname.getBytes(), peerID);
+                public void onPeerInfoUpdated(@NonNull String peerID, @NonNull String nickname) {
+                    plugin.onReceivedEvent(nickname, peerID);
                 }
 
                 @Override
-                public void onSent(@NotNull String messageID, @Nullable String peerID) {
+                public void onSent(@NonNull String messageID, @Nullable String peerID) {
                     plugin.onSentEvent(makeUUID(messageID), peerID);
                 }
             }
@@ -175,6 +187,40 @@ public class Bitchat {
 
         InitializeResult result = new InitializeResult(peerID);
         callback.success(result);
+    }
+
+    /**
+     * Establish Noise session if needed before starting private chat
+     * Uses same lexicographical logic as MessageHandler.handleNoiseIdentityAnnouncement
+     */
+    public void establishNoiseSessionIfNeeded(String peerID) {
+        if (meshService.hasEstablishedSession(peerID)) {
+            // Log.d(TAG, "Noise session already established with $peerID")
+            return;
+        }
+
+        // Log.d(TAG, "No Noise session with $peerID, determining who should initiate handshake")
+
+        String myPeerID = meshService.getMyPeerID();
+
+        // Use lexicographical comparison to decide who initiates (same logic as MessageHandler)
+        if (myPeerID.compareTo(peerID) < 0) {
+            // We should initiate the handshake
+            // Log.d(
+            //         TAG,
+            //         "Our peer ID lexicographically < target peer ID, initiating Noise handshake with $peerID"
+            // )
+            meshService.initiateNoiseHandshake(peerID);
+        } else {
+            // They should initiate, we send identity announcement through standard announce
+            // Log.d(
+            //         TAG,
+            //         "Our peer ID lexicographically >= target peer ID, sending identity announcement to prompt handshake from $peerID"
+            // )
+            meshService.sendAnnouncementToPeer(peerID);
+            // Log.d(TAG, "Sent identity announcement to $peerID – starting handshake now from our side")
+            meshService.initiateNoiseHandshake(peerID);
+        }
     }
 
     public void isInitialized(@NonNull Callback callback) {
@@ -194,11 +240,10 @@ public class Bitchat {
         }
 
         @Nullable
-        byte[] message = options.getMessage();
+        String message = options.getMessage();
 
         if (message != null) {
-            //nickname = Base64.encodeToString(message, Base64.NO_WRAP);
-            nickname = new String(message);
+            nickname = message;
         }
 
         meshService.startServices();
@@ -235,7 +280,7 @@ public class Bitchat {
         }
 
         @Nullable
-        byte[] message = options.getMessage();
+        String message = options.getMessage();
 
         if (message == null) {
             callback.error(new Exception(MISSING_PAYLOAD));
@@ -248,11 +293,9 @@ public class Bitchat {
         String peerID = options.getPeerID();
 
         if (peerID == null) {
-            meshService.sendMessage(message);
-            //meshService.sendMessage(new String(message), Collections.emptyList(), null);
+            meshService.sendMessage(message, Collections.emptyList(), null);
         } else {
-            meshService.sendPrivateMessage(message, peerID, messageID.toString());
-            //meshService.sendPrivateMessage(new String(message), peerID, "", messageID.toString());
+            meshService.sendPrivateMessage(message, peerID, "unknown", messageID.toString());
         }
 
         SendResult result = new SendResult(messageID);

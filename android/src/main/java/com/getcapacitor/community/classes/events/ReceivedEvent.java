@@ -1,6 +1,5 @@
 package com.getcapacitor.community.classes.events;
 
-import android.util.Base64;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.getcapacitor.JSObject;
@@ -9,7 +8,7 @@ import java.util.UUID;
 public class ReceivedEvent extends MessageIDEvent {
 
     @NonNull
-    private final byte[] message;
+    private final String message;
 
     @Nullable
     private final String peerID;
@@ -22,7 +21,7 @@ public class ReceivedEvent extends MessageIDEvent {
 
     public ReceivedEvent(
         @Nullable UUID messageID,
-        @NonNull byte[] message,
+        @NonNull String message,
         @Nullable String peerID,
         @Nullable Boolean isPrivate,
         @Nullable Boolean isRelay
@@ -39,9 +38,7 @@ public class ReceivedEvent extends MessageIDEvent {
     public JSObject toJSObject() {
         JSObject result = super.toJSObject();
 
-        if (message.length > 0) {
-            result.put("message", Base64.encodeToString(message, Base64.NO_WRAP));
-        }
+        result.put("message", message);
 
         if (peerID != null) {
             result.put("peerID", peerID);

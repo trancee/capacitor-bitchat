@@ -154,7 +154,7 @@ class BluetoothMeshService(private val context: Context) {
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to remove Noise session for $peerID: ${e.message}")
                 }
-                delegate?.onDeviceDisconnected(peerID) // trancee
+                delegate?.onLost(peerID) // trancee
             }
         }
         
@@ -425,6 +425,9 @@ class BluetoothMeshService(private val context: Context) {
                     // Track for sync
                     try { gossipSyncManager.onPublicPacketSeen(routed.packet) } catch (_: Exception) { }
                 }
+                routed.peerID?.let { peerID ->
+                    delegate?.onFound(peerID) // trancee
+                }
             }
             
             override fun handleMessage(routed: RoutedPacket) {
@@ -441,6 +444,9 @@ class BluetoothMeshService(private val context: Context) {
             
             override fun handleLeave(routed: RoutedPacket) {
                 serviceScope.launch { messageHandler.handleLeave(routed) }
+                routed.peerID?.let { peerID ->
+                    delegate?.onLost(peerID) // trancee
+                }
             }
             
             override fun handleFragment(packet: BitchatPacket): BitchatPacket? {
@@ -491,7 +497,7 @@ class BluetoothMeshService(private val context: Context) {
                     val addr = device.address
                     val peer = connectionManager.addressPeerMap[addr]
                     peer?.let { peerID ->
-                        delegate?.onDeviceConnected(peerID) // trancee
+                        delegate?.onConnected(peerID) // trancee
                     }
                 } catch (_: Exception) { }
             }
@@ -501,7 +507,7 @@ class BluetoothMeshService(private val context: Context) {
                 // Remove mapping and, if that was the last direct path for the peer, clear direct flag
                 val peer = connectionManager.addressPeerMap[addr]
                 peer?.let { peerID ->
-                    delegate?.onDeviceDisconnected(peerID) // trancee
+                    delegate?.onDisconnected(peerID) // trancee
                 }
                 // ConnectionTracker has already removed the address mapping; be defensive either way
                 connectionManager.addressPeerMap.remove(addr)
@@ -590,16 +596,8 @@ class BluetoothMeshService(private val context: Context) {
     /**
      * Send public message
      */
-    // trancee
     fun sendMessage(content: String, mentions: List<String> = emptyList(), channel: String? = null) {
         if (content.isEmpty()) return
-
-        sendMessage(content.toByteArray(Charsets.UTF_8))
-    }
-    // trancee
-
-    fun sendMessage(bytes: ByteArray) { // trancee
-        if (bytes.isEmpty()) return // trancee
         
         serviceScope.launch {
             val packet = BitchatPacket(
@@ -608,7 +606,7 @@ class BluetoothMeshService(private val context: Context) {
                 senderID = hexStringToByteArray(myPeerID),
                 recipientID = SpecialRecipients.BROADCAST,
                 timestamp = System.currentTimeMillis().toULong(),
-                payload = bytes, // trancee
+                payload = content.toByteArray(Charsets.UTF_8),
                 signature = null,
                 ttl = MAX_TTL
             )
@@ -741,16 +739,11 @@ class BluetoothMeshService(private val context: Context) {
     fun sendPrivateMessage(content: String, recipientPeerID: String, recipientNickname: String, messageID: String? = null) {
         if (content.isEmpty() || recipientPeerID.isEmpty()) return
         if (recipientNickname.isEmpty()) return
-
-        sendPrivateMessage(content.toByteArray(Charsets.UTF_8), recipientPeerID, messageID)
-    }
-    fun sendPrivateMessage(bytes: ByteArray, recipientPeerID: String, messageID: String? = null) {
-        if (bytes.isEmpty() || recipientPeerID.isEmpty()) return
-
+        
         serviceScope.launch {
             val finalMessageID = messageID ?: java.util.UUID.randomUUID().toString()
             
-            Log.d(TAG, "📨 Sending PM to $recipientPeerID: ${bytes.take(30)}...")
+            Log.d(TAG, "📨 Sending PM to $recipientPeerID: ${content.take(30)}...")
             
             // Check if we have an established Noise session
             if (encryptionService.hasEstablishedSession(recipientPeerID)) {
@@ -758,8 +751,7 @@ class BluetoothMeshService(private val context: Context) {
                     // Create TLV-encoded private message exactly like iOS
                     val privateMessage = com.bitchat.android.model.PrivateMessagePacket(
                         messageID = finalMessageID,
-                        content = "",
-                        bytes = bytes
+                        content = content
                     )
                     
                     val tlvData = privateMessage.encode()
@@ -1199,10 +1191,12 @@ interface BluetoothMeshDelegate {
     // trancee
     fun onStarted(peerID: String, success: Boolean?)
     fun onStopped()
-    fun onDeviceConnected(peerID: String)
-    fun onDeviceDisconnected(peerID: String)
+    fun onFound(peerID: String)
+    fun onLost(peerID: String)
+    fun onConnected(peerID: String)
+    fun onDisconnected(peerID: String)
+    fun onSent(messageID: String, peerID: String?)
     fun onRSSIUpdated(peerID: String, rssi: Int)
     fun onPeerInfoUpdated(peerID: String, nickname: String)
-    fun onSent(messageID: String, peerID: String?)
     // trancee
 }

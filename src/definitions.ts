@@ -19,6 +19,15 @@ export interface BitchatPlugin {
   addListener(eventName: 'onStarted', listenerFunc: OnStartedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onStopped', listenerFunc: OnStoppedListener): Promise<PluginListenerHandle>;
 
+  /**
+   * @since 0.1.3
+   */
+  addListener(eventName: 'onFound', listenerFunc: OnFoundListener): Promise<PluginListenerHandle>;
+  /**
+   * @since 0.1.3
+   */
+  addListener(eventName: 'onLost', listenerFunc: OnLostListener): Promise<PluginListenerHandle>;
+
   addListener(eventName: 'onConnected', listenerFunc: OnConnectedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onDisconnected', listenerFunc: OnDisconnectedListener): Promise<PluginListenerHandle>;
 
@@ -79,6 +88,16 @@ export interface OnStartedEvent {
   isStarted?: boolean;
 }
 export type OnStoppedListener = (event: void) => void;
+
+export type OnFoundListener = (event: OnFoundEvent) => void;
+export interface OnFoundEvent {
+  peerID: PeerID;
+}
+export type OnLostListener = (event: OnLostEvent) => void;
+export interface OnLostEvent {
+  peerID: PeerID;
+}
+
 export type OnConnectedListener = (event: OnConnectedEvent) => void;
 export interface OnConnectedEvent {
   peerID: PeerID;
@@ -87,6 +106,7 @@ export type OnDisconnectedListener = (event: OnDisconnectedEvent) => void;
 export interface OnDisconnectedEvent {
   peerID: PeerID;
 }
+
 export type OnSentListener = (event: OnSentEvent) => void;
 export interface OnSentEvent {
   messageID: MessageID;
@@ -101,6 +121,7 @@ export interface OnReceivedEvent {
   message: Base64;
   peerID?: PeerID;
 }
+
 export type OnRSSIUpdatedListener = (event: OnRSSIUpdatedEvent) => void;
 export interface OnRSSIUpdatedEvent {
   peerID: PeerID;

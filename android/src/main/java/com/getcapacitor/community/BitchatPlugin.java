@@ -14,6 +14,8 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import com.getcapacitor.community.classes.events.ConnectedEvent;
 import com.getcapacitor.community.classes.events.DisconnectedEvent;
+import com.getcapacitor.community.classes.events.FoundEvent;
+import com.getcapacitor.community.classes.events.LostEvent;
 import com.getcapacitor.community.classes.events.PeerListUpdatedEvent;
 import com.getcapacitor.community.classes.events.RSSIUpdatedEvent;
 import com.getcapacitor.community.classes.events.ReceivedEvent;
@@ -70,6 +72,9 @@ public class BitchatPlugin extends Plugin {
     static final String STOPPED_EVENT = "onStopped";
 
     // Connectivity Listeners
+
+    static final String FOUND_EVENT = "onFound";
+    static final String LOST_EVENT = "onLost";
 
     static final String CONNECTED_EVENT = "onConnected";
     static final String DISCONNECTED_EVENT = "onDisconnected";
@@ -310,6 +315,18 @@ public class BitchatPlugin extends Plugin {
      * Connectivity Listeners
      */
 
+    protected void onFoundEvent(String peerID) {
+        FoundEvent event = new FoundEvent(peerID);
+
+        notifyListeners(FOUND_EVENT, event.toJSObject());
+    }
+
+    protected void onLostEvent(String peerID) {
+        LostEvent event = new LostEvent(peerID);
+
+        notifyListeners(LOST_EVENT, event.toJSObject());
+    }
+
     protected void onConnectedEvent(String peerID) {
         ConnectedEvent event = new ConnectedEvent(peerID);
 
@@ -332,11 +349,11 @@ public class BitchatPlugin extends Plugin {
         notifyListeners(SENT_EVENT, event.toJSObject());
     }
 
-    protected void onReceivedEvent(byte[] message, String peerID) {
+    protected void onReceivedEvent(String message, String peerID) {
         onReceivedEvent(null, message, peerID, null, null);
     }
 
-    protected void onReceivedEvent(UUID messageID, byte[] message, String peerID, Boolean isPrivate, Boolean isRelay) {
+    protected void onReceivedEvent(UUID messageID, String message, String peerID, Boolean isPrivate, Boolean isRelay) {
         ReceivedEvent event = new ReceivedEvent(messageID, message, peerID, isPrivate, isRelay);
 
         notifyListeners(RECEIVED_EVENT, event.toJSObject());

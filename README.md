@@ -37,6 +37,8 @@ npx cap sync
 * [`requestPermissions(...)`](#requestpermissions)
 * [`addListener('onStarted', ...)`](#addlisteneronstarted-)
 * [`addListener('onStopped', ...)`](#addlisteneronstopped-)
+* [`addListener('onFound', ...)`](#addlisteneronfound-)
+* [`addListener('onLost', ...)`](#addlisteneronlost-)
 * [`addListener('onConnected', ...)`](#addlisteneronconnected-)
 * [`addListener('onDisconnected', ...)`](#addlistenerondisconnected-)
 * [`addListener('onSent', ...)`](#addlisteneronsent-)
@@ -182,6 +184,42 @@ addListener(eventName: 'onStopped', listenerFunc: OnStoppedListener) => Promise<
 | **`listenerFunc`** | <code><a href="#onstoppedlistener">OnStoppedListener</a></code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('onFound', ...)
+
+```typescript
+addListener(eventName: 'onFound', listenerFunc: OnFoundListener) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                        |
+| ------------------ | ----------------------------------------------------------- |
+| **`eventName`**    | <code>'onFound'</code>                                      |
+| **`listenerFunc`** | <code><a href="#onfoundlistener">OnFoundListener</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+**Since:** 0.1.3
+
+--------------------
+
+
+### addListener('onLost', ...)
+
+```typescript
+addListener(eventName: 'onLost', listenerFunc: OnLostListener) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                      |
+| ------------------ | --------------------------------------------------------- |
+| **`eventName`**    | <code>'onLost'</code>                                     |
+| **`listenerFunc`** | <code><a href="#onlostlistener">OnLostListener</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+**Since:** 0.1.3
 
 --------------------
 
@@ -378,6 +416,20 @@ removeAllListeners() => Promise<void>
 | **`isStarted`** | <code>boolean</code>                      | 0.1.1 |
 
 
+#### OnFoundEvent
+
+| Prop         | Type                                      |
+| ------------ | ----------------------------------------- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
+
+
+#### OnLostEvent
+
+| Prop         | Type                                      |
+| ------------ | ----------------------------------------- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
+
+
 #### OnConnectedEvent
 
 | Prop         | Type                                      |
@@ -470,6 +522,16 @@ removeAllListeners() => Promise<void>
 #### OnStoppedListener
 
 <code>(event: void): void</code>
+
+
+#### OnFoundListener
+
+<code>(event: <a href="#onfoundevent">OnFoundEvent</a>): void</code>
+
+
+#### OnLostListener
+
+<code>(event: <a href="#onlostevent">OnLostEvent</a>): void</code>
 
 
 #### OnConnectedListener

@@ -1,13 +1,12 @@
 package com.getcapacitor.community.classes.options;
 
-import android.util.Base64;
 import androidx.annotation.Nullable;
 import com.getcapacitor.PluginCall;
 
 public class StartOptions {
 
     @Nullable
-    private byte[] message;
+    private String message;
 
     public StartOptions(PluginCall call) {
         @Nullable
@@ -16,11 +15,11 @@ public class StartOptions {
     }
 
     private void setMessage(@Nullable String message) {
-        this.message = (message == null || message.isEmpty()) ? null : Base64.decode(message, Base64.NO_WRAP);
+        this.message = message;
     }
 
     @Nullable
-    public byte[] getMessage() {
+    public String getMessage() {
         return message;
     }
 }

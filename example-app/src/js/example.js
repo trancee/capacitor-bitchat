@@ -138,21 +138,34 @@ window.addListeners = async () => {
                 logEvent(`onStopped()`)
             }),
 
+        await Bitchat.addListener('onFound',
+            (event) => {
+                logEvent(`onFound(${JSON.stringify(event) || ""})`)
+
+                const peerID = event.peerID
+
+                addOption(peerID, peerID)
+            }),
+        await Bitchat.addListener('onLost',
+            (event) => {
+                logEvent(`onLost(${JSON.stringify(event) || ""})`)
+
+                const peerID = event.peerID
+
+                removeOption(peerID)
+            }),
+
         await Bitchat.addListener('onConnected',
             (event) => {
                 logEvent(`onConnected(${JSON.stringify(event) || ""})`)
 
                 const peerID = event.peerID
-
-                addOption(peerID, peerID)
             }),
         await Bitchat.addListener('onDisconnected',
             (event) => {
                 logEvent(`onDisconnected(${JSON.stringify(event) || ""})`)
 
                 const peerID = event.peerID
-
-                removeOption(peerID)
             }),
 
         await Bitchat.addListener('onSent',
@@ -180,7 +193,7 @@ window.addListeners = async () => {
 
                 const option = getOption(peerID)
                 if (option) 
-                    option.text = `${peerID} [${rssi} dBm]`
+                    option.text = `${peerID}  (${rssi} dBm)`
             }),
         await Bitchat.addListener('onPeerListUpdated',
             (event) => {
