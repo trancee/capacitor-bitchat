@@ -55,7 +55,8 @@ class BluetoothMeshService(private val context: Context) {
     
     // Delegate for message callbacks (maintains same interface)
     var delegate: BluetoothMeshDelegate? = null
-    
+    var announceInterval: Long = 30000 // trancee
+
     // Coroutines
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
@@ -117,13 +118,13 @@ class BluetoothMeshService(private val context: Context) {
     }
 
     /**
-     * Send broadcast announcement every 10 seconds
+     * Send broadcast announcement every 30 seconds
      */
     private fun sendPeriodicBroadcastAnnounce() {
         serviceScope.launch {
             while (isActive) {
                 try {
-                    delay(10000) // 10 seconds
+                    delay(announceInterval) // trancee
                     sendBroadcastAnnounce()
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in periodic broadcast announce: ${e.message}")
@@ -240,7 +241,7 @@ class BluetoothMeshService(private val context: Context) {
             }
             
             override fun updatePeerInfo(peerID: String, nickname: String, noisePublicKey: ByteArray, signingPublicKey: ByteArray, isVerified: Boolean): Boolean {
-                delegate?.onPeerInfoUpdated(peerID, nickname) // trancee
+                delegate?.onPeerInfoUpdated(peerID, nickname, isVerified) // trancee
                 return peerManager.updatePeerInfo(peerID, nickname, noisePublicKey, signingPublicKey, isVerified)
             }
             
@@ -321,6 +322,7 @@ class BluetoothMeshService(private val context: Context) {
             
             override fun updatePeerIDBinding(newPeerID: String, nickname: String,
                                            publicKey: ByteArray, previousPeerID: String?) {
+                delegate?.onPeerIDChanged(newPeerID, previousPeerID, nickname) // trancee
 
                 Log.d(TAG, "Updating peer ID binding: $newPeerID (was: $previousPeerID) with nickname: $nickname and public key: ${publicKey.toHexString().take(16)}...")
                 // Update peer mapping in the PeerManager for peer ID rotation support
@@ -1197,6 +1199,7 @@ interface BluetoothMeshDelegate {
     fun onDisconnected(peerID: String)
     fun onSent(messageID: String, peerID: String?)
     fun onRSSIUpdated(peerID: String, rssi: Int)
-    fun onPeerInfoUpdated(peerID: String, nickname: String)
+    fun onPeerInfoUpdated(peerID: String, nickname: String, isVerified: Boolean)
+    fun onPeerIDChanged(peerID: String, previousPeerID: String?, nickname: String)
     // trancee
 }

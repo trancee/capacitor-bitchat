@@ -19,10 +19,13 @@ import type {
 let isInitialized = false;
 let isStarted = false;
 const peerID = getID();
+let announceInterval = 30000; // 30 seconds
+let announceIntervalTimeout: ReturnType<typeof setInterval>;
 
 export class BitchatWeb extends WebPlugin implements BitchatPlugin {
   async initialize(options?: InitializeOptions): Promise<InitializeResult> {
     console.info('initialize', options ?? '');
+    announceInterval = options?.announceInterval || 30000;
     isInitialized = true;
     this.notifyListeners('onPeerListUpdated', { peers: [peerID] });
     return { peerID };
@@ -39,11 +42,17 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
     }
     isStarted = true;
     this.notifyListeners('onStarted', { peerID, isStarted });
-    const message = options?.message;
-    if (message) {
-      const messageID = getUUID();
-      this.notifyListeners('onSent', { messageID });
-    }
+    clearInterval(announceIntervalTimeout);
+    announceIntervalTimeout = setInterval(() => {
+      if (isStarted) {
+        const message = options?.message;
+        if (message) {
+          const messageID = getUUID();
+          this.notifyListeners('onSent', { messageID });
+          this.notifyListeners('onReceived', { messageID, message });
+        }
+      }
+    }, announceInterval);
     this.notifyListeners('onRSSIUpdated', { peerID, rssi: getRSSI() });
     return { peerID };
   }
@@ -54,6 +63,7 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
 
   async stop(): Promise<void> {
     console.info('stop');
+    clearInterval(announceIntervalTimeout);
     isStarted = false;
     this.notifyListeners('onStopped', {});
   }

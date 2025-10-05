@@ -23,6 +23,10 @@ const logEvent = (event) => {
 window.testInitialize = async () => {
     const options = {}
 
+    if (document.getElementById("announceInterval") && document.getElementById("announceInterval").value > 0) {
+        options.announceInterval = document.getElementById("announceInterval").value
+    }
+
     const result = await window.execute("initialize", options)
 
     const peerID = result.peerID
@@ -184,17 +188,6 @@ window.addListeners = async () => {
                 const peerID = event.peerID
             }),
 
-        await Bitchat.addListener('onRSSIUpdated',
-            (event) => {
-                logEvent(`onRSSIUpdated(${JSON.stringify(event) || ""})`)
-
-                const peerID = event.peerID
-                const rssi = event.rssi
-
-                const option = getOption(peerID)
-                if (option) 
-                    option.text = `${peerID}  (${rssi} dBm)`
-            }),
         await Bitchat.addListener('onPeerListUpdated',
             (event) => {
                 logEvent(`onPeerListUpdated(${JSON.stringify(event) || ""})`)
@@ -217,6 +210,33 @@ window.addListeners = async () => {
                 Object.keys(removePeers).forEach(peerID => {
                     removeOption(peerID)
                 })
+            }),
+        await Bitchat.addListener('onPeerIDChanged',
+            (event) => {
+                logEvent(`onPeerIDChanged(${JSON.stringify(event) || ""})`)
+
+                const peerID = event.peerID
+                const oldPeerID = event.oldPeerID
+
+                const message = event.message
+
+                const option = getOption(oldPeerID)
+                if (option) {
+                    option.value = peerID
+                    option.text = `${peerID}  (${rssi} dBm)`
+                }
+            }),
+
+        await Bitchat.addListener('onRSSIUpdated',
+            (event) => {
+                logEvent(`onRSSIUpdated(${JSON.stringify(event) || ""})`)
+
+                const peerID = event.peerID
+                const rssi = event.rssi
+
+                const option = getOption(peerID)
+                if (option)
+                    option.text = `${peerID}  (${rssi} dBm)`
             }),
     ])
 }

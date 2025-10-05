@@ -19,6 +19,7 @@
       vertical-align: middle;
     }
 
+    input[type='number'],
     input[type='text'],
     select {
       width: -webkit-fill-available;
@@ -131,6 +132,10 @@
           <legend title="Initialize">Initialize</legend>
           <button onclick="toggle(this)" class="float">▼</button>
           <span style="display: none;">
+            <p>
+              <label for="announceInterval">Announce Interval</label>
+              <input type="number" id="announceInterval" name="announceInterval" value="10000" />
+            </p>
             <p>
               <label for="peerID">Peer ID</label>
               <input type="text" id="peerID" name="peerID" value="" disabled />

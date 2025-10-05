@@ -3,6 +3,9 @@
   "appName": "example-app",
   "webDir": "dist",
   "plugins": {
+    "Bitchat": {
+      "announceInterval": 10000
+    },
     "SplashScreen": {
       "launchAutoHide": false
     }

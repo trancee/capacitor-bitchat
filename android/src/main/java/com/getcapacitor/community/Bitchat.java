@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import kotlin.Unit;
+import org.jetbrains.annotations.NotNull;
 
 public class Bitchat {
 
@@ -42,6 +43,9 @@ public class Bitchat {
     private final BitchatPlugin plugin;
 
     @NonNull
+    private final BitchatConfig config;
+
+    @NonNull
     private final BatteryOptimizationManager batteryOptimizationManager;
 
     @NonNull
@@ -50,8 +54,9 @@ public class Bitchat {
     @NonNull
     private final BluetoothMeshService meshService;
 
-    public Bitchat(@NonNull BitchatPlugin plugin) {
+    public Bitchat(@NonNull BitchatPlugin plugin, @NonNull BitchatConfig config) {
         this.plugin = plugin;
+        this.config = config;
 
         ComponentActivity activity = plugin.getActivity();
         Context context = plugin.getContext();
@@ -170,8 +175,13 @@ public class Bitchat {
                 }
 
                 @Override
-                public void onPeerInfoUpdated(@NonNull String peerID, @NonNull String nickname) {
+                public void onPeerInfoUpdated(@NotNull String peerID, @NotNull String nickname, boolean isVerified) {
                     plugin.onReceivedEvent(nickname, peerID);
+                }
+
+                @Override
+                public void onPeerIDChanged(@NotNull String peerID, @Nullable String previousPeerID, @NotNull String nickname) {
+                    plugin.onPeerIDChangedEvent(peerID, previousPeerID, nickname);
                 }
 
                 @Override
@@ -180,6 +190,13 @@ public class Bitchat {
                 }
             }
         );
+
+        @Nullable
+        Long announceInterval = options.getAnnounceInterval() != null ? options.getAnnounceInterval() : config.getAnnounceInterval();
+
+        if (announceInterval != null) {
+            meshService.setAnnounceInterval(announceInterval);
+        }
 
         isInitialized = true;
 

@@ -1,4 +1,26 @@
+/// <reference types='@capacitor/cli' />
+
 import type { PermissionState, PluginListenerHandle } from '@capacitor/core';
+
+declare module '@capacitor/cli' {
+  export interface PluginsConfig {
+    /**
+     * These configuration values are available:
+     *
+     * @since 1.0.0
+     */
+    Bitchat?: {
+      /**
+       * Sets the interval (in milliseconds) for announcing presence to nearby peers.
+       *
+       * @default 30000 (30 seconds)
+       * @example 10000
+       * @since 0.1.4
+       */
+      announceInterval?: number;
+    };
+  }
+}
 
 export type PeerID = ID;
 export type MessageID = UUID;
@@ -34,14 +56,25 @@ export interface BitchatPlugin {
   addListener(eventName: 'onSent', listenerFunc: OnSentListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onReceived', listenerFunc: OnReceivedListener): Promise<PluginListenerHandle>;
 
-  addListener(eventName: 'onRSSIUpdated', listenerFunc: OnRSSIUpdatedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onPeerListUpdated', listenerFunc: OnPeerListUpdatedListener): Promise<PluginListenerHandle>;
+  /**
+   * @since 0.1.4
+   */
+  addListener(eventName: 'onPeerIDChanged', listenerFunc: OnPeerIDChangedListener): Promise<PluginListenerHandle>;
+
+  addListener(eventName: 'onRSSIUpdated', listenerFunc: OnRSSIUpdatedListener): Promise<PluginListenerHandle>;
 
   removeAllListeners(): Promise<void>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface InitializeOptions {}
+export interface InitializeOptions {
+  /**
+   * @since 0.1.4
+   * @default 10000 (10 seconds)
+   */
+  announceInterval?: number;
+}
 export interface InitializeResult {
   /**
    * @since 0.1.1
@@ -122,17 +155,27 @@ export interface OnReceivedEvent {
   peerID?: PeerID;
 }
 
-export type OnRSSIUpdatedListener = (event: OnRSSIUpdatedEvent) => void;
-export interface OnRSSIUpdatedEvent {
-  peerID: PeerID;
-  rssi: number;
-}
 export type OnPeerListUpdatedListener = (event: OnPeerListUpdatedEvent) => void;
 export interface OnPeerListUpdatedEvent {
   /**
    * @since 0.1.1
    */
   peers: PeerID[];
+}
+export type OnPeerIDChangedListener = (event: OnPeerIDChangedEvent) => void;
+export interface OnPeerIDChangedEvent {
+  /**
+   * @since 0.1.4
+   */
+  peerID: PeerID;
+  oldPeerID?: PeerID;
+  message: Base64;
+}
+
+export type OnRSSIUpdatedListener = (event: OnRSSIUpdatedEvent) => void;
+export interface OnRSSIUpdatedEvent {
+  peerID: PeerID;
+  rssi: number;
 }
 
 // Permissions

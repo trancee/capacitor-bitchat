@@ -16,6 +16,7 @@ import com.getcapacitor.community.classes.events.ConnectedEvent;
 import com.getcapacitor.community.classes.events.DisconnectedEvent;
 import com.getcapacitor.community.classes.events.FoundEvent;
 import com.getcapacitor.community.classes.events.LostEvent;
+import com.getcapacitor.community.classes.events.PeerIDChangedEvent;
 import com.getcapacitor.community.classes.events.PeerListUpdatedEvent;
 import com.getcapacitor.community.classes.events.RSSIUpdatedEvent;
 import com.getcapacitor.community.classes.events.ReceivedEvent;
@@ -85,7 +86,9 @@ public class BitchatPlugin extends Plugin {
     static final String RECEIVED_EVENT = "onReceived";
 
     static final String RSSI_UPDATED_EVENT = "onRSSIUpdated";
+
     static final String PEER_LIST_UPDATED_EVENT = "onPeerListUpdated";
+    static final String PEER_ID_CHANGED_EVENT = "onPeerIDChanged";
 
     private Bitchat implementation;
 
@@ -93,7 +96,9 @@ public class BitchatPlugin extends Plugin {
     public void load() {
         super.load();
 
-        implementation = new Bitchat(this);
+        BitchatConfig config = getBitchatConfig();
+
+        implementation = new Bitchat(this, config);
     }
 
     /**
@@ -296,6 +301,16 @@ public class BitchatPlugin extends Plugin {
     }
 
     /**
+     * Configuration
+     */
+
+    private BitchatConfig getBitchatConfig() {
+        long announceInterval = getConfig().getConfigJSON().optLong("announceInterval");
+
+        return new BitchatConfig(announceInterval > 0 ? announceInterval : null);
+    }
+
+    /**
      * Initialization Listeners
      */
 
@@ -369,5 +384,11 @@ public class BitchatPlugin extends Plugin {
         PeerListUpdatedEvent event = new PeerListUpdatedEvent(peers);
 
         notifyListeners(PEER_LIST_UPDATED_EVENT, event.toJSObject());
+    }
+
+    protected void onPeerIDChangedEvent(String peerID, String oldPeerID, String message) {
+        PeerIDChangedEvent event = new PeerIDChangedEvent(peerID, oldPeerID, message);
+
+        notifyListeners(PEER_ID_CHANGED_EVENT, event.toJSObject());
     }
 }

@@ -23,6 +23,51 @@ npm install @capacitor-trancee/bitchat
 npx cap sync
 ```
 
+## Configuration
+
+<docgen-config>
+<!--Update the source file JSDoc comments and rerun docgen to update the docs below-->
+
+These configuration values are available:
+
+| Prop                   | Type                | Description                                                                  | Default                         | Since |
+| ---------------------- | ------------------- | ---------------------------------------------------------------------------- | ------------------------------- | ----- |
+| **`announceInterval`** | <code>number</code> | Sets the interval (in milliseconds) for announcing presence to nearby peers. | <code>30000 (30 seconds)</code> | 0.1.4 |
+
+### Examples
+
+In `capacitor.config.json`:
+
+```json
+{
+  "plugins": {
+    "Bitchat": {
+      "announceInterval": 10000
+    }
+  }
+}
+```
+
+In `capacitor.config.ts`:
+
+```ts
+/// <reference types="@capacitor-trancee/bitchat" />
+
+import { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  plugins: {
+    Bitchat: {
+      announceInterval: 10000,
+    },
+  },
+};
+
+export default config;
+```
+
+</docgen-config>
+
 ## API
 
 <docgen-index>
@@ -43,8 +88,9 @@ npx cap sync
 * [`addListener('onDisconnected', ...)`](#addlistenerondisconnected-)
 * [`addListener('onSent', ...)`](#addlisteneronsent-)
 * [`addListener('onReceived', ...)`](#addlisteneronreceived-)
-* [`addListener('onRSSIUpdated', ...)`](#addlisteneronrssiupdated-)
 * [`addListener('onPeerListUpdated', ...)`](#addlisteneronpeerlistupdated-)
+* [`addListener('onPeerIDChanged', ...)`](#addlisteneronpeeridchanged-)
+* [`addListener('onRSSIUpdated', ...)`](#addlisteneronrssiupdated-)
 * [`removeAllListeners()`](#removealllisteners)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
@@ -288,22 +334,6 @@ addListener(eventName: 'onReceived', listenerFunc: OnReceivedListener) => Promis
 --------------------
 
 
-### addListener('onRSSIUpdated', ...)
-
-```typescript
-addListener(eventName: 'onRSSIUpdated', listenerFunc: OnRSSIUpdatedListener) => Promise<PluginListenerHandle>
-```
-
-| Param              | Type                                                                    |
-| ------------------ | ----------------------------------------------------------------------- |
-| **`eventName`**    | <code>'onRSSIUpdated'</code>                                            |
-| **`listenerFunc`** | <code><a href="#onrssiupdatedlistener">OnRSSIUpdatedListener</a></code> |
-
-**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
-
---------------------
-
-
 ### addListener('onPeerListUpdated', ...)
 
 ```typescript
@@ -314,6 +344,40 @@ addListener(eventName: 'onPeerListUpdated', listenerFunc: OnPeerListUpdatedListe
 | ------------------ | ------------------------------------------------------------------------------- |
 | **`eventName`**    | <code>'onPeerListUpdated'</code>                                                |
 | **`listenerFunc`** | <code><a href="#onpeerlistupdatedlistener">OnPeerListUpdatedListener</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('onPeerIDChanged', ...)
+
+```typescript
+addListener(eventName: 'onPeerIDChanged', listenerFunc: OnPeerIDChangedListener) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                                        |
+| ------------------ | --------------------------------------------------------------------------- |
+| **`eventName`**    | <code>'onPeerIDChanged'</code>                                              |
+| **`listenerFunc`** | <code><a href="#onpeeridchangedlistener">OnPeerIDChangedListener</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+**Since:** 0.1.4
+
+--------------------
+
+
+### addListener('onRSSIUpdated', ...)
+
+```typescript
+addListener(eventName: 'onRSSIUpdated', listenerFunc: OnRSSIUpdatedListener) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                                    |
+| ------------------ | ----------------------------------------------------------------------- |
+| **`eventName`**    | <code>'onRSSIUpdated'</code>                                            |
+| **`listenerFunc`** | <code><a href="#onrssiupdatedlistener">OnRSSIUpdatedListener</a></code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
 
@@ -340,6 +404,10 @@ removeAllListeners() => Promise<void>
 
 
 #### InitializeOptions
+
+| Prop                   | Type                | Default                         | Since |
+| ---------------------- | ------------------- | ------------------------------- | ----- |
+| **`announceInterval`** | <code>number</code> | <code>10000 (10 seconds)</code> | 0.1.4 |
 
 
 #### IsInitializedResult
@@ -461,19 +529,28 @@ removeAllListeners() => Promise<void>
 | **`peerID`**    | <code><a href="#peerid">PeerID</a></code>       |
 
 
+#### OnPeerListUpdatedEvent
+
+| Prop        | Type              | Since |
+| ----------- | ----------------- | ----- |
+| **`peers`** | <code>ID[]</code> | 0.1.1 |
+
+
+#### OnPeerIDChangedEvent
+
+| Prop            | Type                                      | Since |
+| --------------- | ----------------------------------------- | ----- |
+| **`peerID`**    | <code><a href="#peerid">PeerID</a></code> | 0.1.4 |
+| **`oldPeerID`** | <code><a href="#peerid">PeerID</a></code> |       |
+| **`message`**   | <code><a href="#base64">Base64</a></code> |       |
+
+
 #### OnRSSIUpdatedEvent
 
 | Prop         | Type                                      |
 | ------------ | ----------------------------------------- |
 | **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
 | **`rssi`**   | <code>number</code>                       |
-
-
-#### OnPeerListUpdatedEvent
-
-| Prop        | Type              | Since |
-| ----------- | ----------------- | ----- |
-| **`peers`** | <code>ID[]</code> | 0.1.1 |
 
 
 ### Type Aliases
@@ -554,13 +631,18 @@ removeAllListeners() => Promise<void>
 <code>(event: <a href="#onreceivedevent">OnReceivedEvent</a>): void</code>
 
 
-#### OnRSSIUpdatedListener
-
-<code>(event: <a href="#onrssiupdatedevent">OnRSSIUpdatedEvent</a>): void</code>
-
-
 #### OnPeerListUpdatedListener
 
 <code>(event: <a href="#onpeerlistupdatedevent">OnPeerListUpdatedEvent</a>): void</code>
+
+
+#### OnPeerIDChangedListener
+
+<code>(event: <a href="#onpeeridchangedevent">OnPeerIDChangedEvent</a>): void</code>
+
+
+#### OnRSSIUpdatedListener
+
+<code>(event: <a href="#onrssiupdatedevent">OnRSSIUpdatedEvent</a>): void</code>
 
 </docgen-api>
