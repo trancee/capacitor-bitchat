@@ -11,10 +11,14 @@ import com.bitchat.android.mesh.BluetoothMeshService;
 import com.bitchat.android.model.BitchatMessage;
 import com.bitchat.android.onboarding.BatteryOptimizationManager;
 import com.bitchat.android.onboarding.PermissionManager;
+import com.getcapacitor.community.classes.options.EstablishOptions;
 import com.getcapacitor.community.classes.options.InitializeOptions;
+import com.getcapacitor.community.classes.options.IsEstablishOptions;
 import com.getcapacitor.community.classes.options.SendOptions;
 import com.getcapacitor.community.classes.options.StartOptions;
+import com.getcapacitor.community.classes.results.EstablishResult;
 import com.getcapacitor.community.classes.results.InitializeResult;
+import com.getcapacitor.community.classes.results.IsEstablishedResult;
 import com.getcapacitor.community.classes.results.IsInitializedResult;
 import com.getcapacitor.community.classes.results.IsStartedResult;
 import com.getcapacitor.community.classes.results.SendResult;
@@ -33,6 +37,7 @@ public class Bitchat {
     private final String NOT_INITIALIZED = "not initialized";
     private final String NOT_STARTED = "not started";
     private final String MISSING_PAYLOAD = "missing payload";
+    private final String MISSING_PEER_ID = "missing peer identifier";
 
     private boolean isInitialized = false;
     private boolean isStarted = false;
@@ -148,10 +153,10 @@ public class Bitchat {
                 }
 
                 @Override
-                public void onFound(@NonNull String peerID) {
-                    establishNoiseSessionIfNeeded(peerID);
+                public void onFound(@NonNull String peerID, @NotNull String nickname) {
+                    // establishNoiseSessionIfNeeded(peerID);
 
-                    plugin.onFoundEvent(peerID);
+                    plugin.onFoundEvent(peerID, nickname);
                 }
 
                 @Override
@@ -170,18 +175,23 @@ public class Bitchat {
                 }
 
                 @Override
+                public void onEstablished(@NotNull String peerID) {
+                    plugin.onEstablishedEvent(peerID);
+                }
+
+                @Override
                 public void onRSSIUpdated(@NonNull String peerID, int rssi) {
                     plugin.onRSSIUpdatedEvent(peerID, rssi);
                 }
 
                 @Override
                 public void onPeerInfoUpdated(@NotNull String peerID, @NotNull String nickname, boolean isVerified) {
-                    plugin.onReceivedEvent(nickname, peerID);
+                    // plugin.onReceivedEvent(nickname, peerID);
                 }
 
                 @Override
-                public void onPeerIDChanged(@NotNull String peerID, @Nullable String previousPeerID, @NotNull String nickname) {
-                    plugin.onPeerIDChangedEvent(peerID, previousPeerID, nickname);
+                public void onPeerIDChanged(@NotNull String peerID, @Nullable String oldPeerID, @NotNull String nickname) {
+                    plugin.onPeerIDChangedEvent(peerID, oldPeerID, nickname);
                 }
 
                 @Override
@@ -204,40 +214,6 @@ public class Bitchat {
 
         InitializeResult result = new InitializeResult(peerID);
         callback.success(result);
-    }
-
-    /**
-     * Establish Noise session if needed before starting private chat
-     * Uses same lexicographical logic as MessageHandler.handleNoiseIdentityAnnouncement
-     */
-    public void establishNoiseSessionIfNeeded(String peerID) {
-        if (meshService.hasEstablishedSession(peerID)) {
-            // Log.d(TAG, "Noise session already established with $peerID")
-            return;
-        }
-
-        // Log.d(TAG, "No Noise session with $peerID, determining who should initiate handshake")
-
-        String myPeerID = meshService.getMyPeerID();
-
-        // Use lexicographical comparison to decide who initiates (same logic as MessageHandler)
-        if (myPeerID.compareTo(peerID) < 0) {
-            // We should initiate the handshake
-            // Log.d(
-            //         TAG,
-            //         "Our peer ID lexicographically < target peer ID, initiating Noise handshake with $peerID"
-            // )
-            meshService.initiateNoiseHandshake(peerID);
-        } else {
-            // They should initiate, we send identity announcement through standard announce
-            // Log.d(
-            //         TAG,
-            //         "Our peer ID lexicographically >= target peer ID, sending identity announcement to prompt handshake from $peerID"
-            // )
-            meshService.sendAnnouncementToPeer(peerID);
-            // Log.d(TAG, "Sent identity announcement to $peerID – starting handshake now from our side")
-            meshService.initiateNoiseHandshake(peerID);
-        }
     }
 
     public void isInitialized(@NonNull Callback callback) {
@@ -280,6 +256,54 @@ public class Bitchat {
         meshService.stopServices();
 
         callback.success();
+    }
+
+    /**
+     * Session
+     */
+
+    public void establish(@NonNull EstablishOptions options, @NonNull Callback callback) {
+        if (!isInitialized) {
+            callback.error(new Exception(NOT_INITIALIZED));
+            return;
+        }
+        if (!isStarted) {
+            callback.error(new Exception(NOT_STARTED));
+            return;
+        }
+
+        @Nullable
+        String peerID = options.getPeerID();
+
+        if (peerID == null) {
+            callback.error(new Exception(MISSING_PEER_ID));
+            return;
+        }
+
+        if (!meshService.hasEstablishedSession(peerID)) {
+            meshService.sendAnnouncementToPeer(peerID);
+            meshService.initiateNoiseHandshake(peerID);
+        }
+
+        Boolean isEstablished = meshService.hasEstablishedSession(peerID);
+
+        EstablishResult result = new EstablishResult(isEstablished);
+        callback.success(result);
+    }
+
+    public void isEstablished(@NonNull IsEstablishOptions options, @NonNull Callback callback) {
+        @Nullable
+        String peerID = options.getPeerID();
+
+        if (peerID == null) {
+            callback.error(new Exception(MISSING_PEER_ID));
+            return;
+        }
+
+        Boolean isEstablished = meshService.hasEstablishedSession(peerID);
+
+        IsEstablishedResult result = new IsEstablishedResult(isEstablished);
+        callback.success(result);
     }
 
     /**

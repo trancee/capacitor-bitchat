@@ -33,6 +33,9 @@ export interface BitchatPlugin {
   isStarted(): Promise<IsStartedResult>;
   stop(): Promise<void>;
 
+  establish(options?: EstablishOptions): Promise<EstablishResult>;
+  isEstablished(options?: IsEstablishedOptions): Promise<IsEstablishedResult>;
+
   send(options: SendOptions): Promise<SendResult>;
 
   checkPermissions(): Promise<PermissionStatus>;
@@ -52,6 +55,10 @@ export interface BitchatPlugin {
 
   addListener(eventName: 'onConnected', listenerFunc: OnConnectedListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onDisconnected', listenerFunc: OnDisconnectedListener): Promise<PluginListenerHandle>;
+  /**
+   * @since 0.1.5
+   */
+  addListener(eventName: 'onEstablished', listenerFunc: OnEstablishedListener): Promise<PluginListenerHandle>;
 
   addListener(eventName: 'onSent', listenerFunc: OnSentListener): Promise<PluginListenerHandle>;
   addListener(eventName: 'onReceived', listenerFunc: OnReceivedListener): Promise<PluginListenerHandle>;
@@ -99,6 +106,30 @@ export interface StartResult {
 export interface IsStartedResult {
   isStarted?: boolean;
 }
+export interface EstablishOptions {
+  /**
+   * @since 0.1.5
+   */
+  peerID: PeerID;
+}
+export interface EstablishResult {
+  /**
+   * @since 0.1.5
+   */
+  isEstablished?: boolean;
+}
+export interface IsEstablishedOptions {
+  /**
+   * @since 0.1.5
+   */
+  peerID: PeerID;
+}
+export interface IsEstablishedResult {
+  /**
+   * @since 0.1.5
+   */
+  isEstablished?: boolean;
+}
 export interface SendOptions {
   message: Base64;
   peerID?: PeerID;
@@ -125,6 +156,10 @@ export type OnStoppedListener = (event: void) => void;
 export type OnFoundListener = (event: OnFoundEvent) => void;
 export interface OnFoundEvent {
   peerID: PeerID;
+  /**
+   * @since 0.1.5
+   */
+  message: Base64;
 }
 export type OnLostListener = (event: OnLostEvent) => void;
 export interface OnLostEvent {
@@ -137,6 +172,13 @@ export interface OnConnectedEvent {
 }
 export type OnDisconnectedListener = (event: OnDisconnectedEvent) => void;
 export interface OnDisconnectedEvent {
+  peerID: PeerID;
+}
+export type OnEstablishedListener = (event: OnEstablishedEvent) => void;
+export interface OnEstablishedEvent {
+  /**
+   * @since 0.1.5
+   */
   peerID: PeerID;
 }
 
@@ -168,7 +210,10 @@ export interface OnPeerIDChangedEvent {
    * @since 0.1.4
    */
   peerID: PeerID;
-  oldPeerID?: PeerID;
+  /**
+   * @since 0.1.5
+   */
+  oldPeerID: PeerID;
   message: Base64;
 }
 

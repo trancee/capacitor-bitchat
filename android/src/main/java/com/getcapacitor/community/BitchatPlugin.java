@@ -14,6 +14,7 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import com.getcapacitor.community.classes.events.ConnectedEvent;
 import com.getcapacitor.community.classes.events.DisconnectedEvent;
+import com.getcapacitor.community.classes.events.EstablishedEvent;
 import com.getcapacitor.community.classes.events.FoundEvent;
 import com.getcapacitor.community.classes.events.LostEvent;
 import com.getcapacitor.community.classes.events.PeerIDChangedEvent;
@@ -23,7 +24,9 @@ import com.getcapacitor.community.classes.events.ReceivedEvent;
 import com.getcapacitor.community.classes.events.SentEvent;
 import com.getcapacitor.community.classes.events.StartedEvent;
 import com.getcapacitor.community.classes.events.StoppedEvent;
+import com.getcapacitor.community.classes.options.EstablishOptions;
 import com.getcapacitor.community.classes.options.InitializeOptions;
+import com.getcapacitor.community.classes.options.IsEstablishOptions;
 import com.getcapacitor.community.classes.options.SendOptions;
 import com.getcapacitor.community.classes.options.StartOptions;
 import com.getcapacitor.community.interfaces.Callback;
@@ -79,6 +82,7 @@ public class BitchatPlugin extends Plugin {
 
     static final String CONNECTED_EVENT = "onConnected";
     static final String DISCONNECTED_EVENT = "onDisconnected";
+    static final String ESTABLISHED_EVENT = "onEstablished";
 
     // Transmission Listeners
 
@@ -159,6 +163,36 @@ public class BitchatPlugin extends Plugin {
 
         try {
             implementation.stop(callback);
+        } catch (Exception exception) {
+            callback.error(exception);
+        }
+    }
+
+    /**
+     * Session
+     */
+
+    @PluginMethod
+    public void establish(PluginCall call) {
+        Callback callback = new Callback(call) {};
+
+        try {
+            EstablishOptions options = new EstablishOptions(call);
+
+            implementation.establish(options, callback);
+        } catch (Exception exception) {
+            callback.error(exception);
+        }
+    }
+
+    @PluginMethod
+    public void isEstablished(PluginCall call) {
+        Callback callback = new Callback(call) {};
+
+        try {
+            IsEstablishOptions options = new IsEstablishOptions(call);
+
+            implementation.isEstablished(options, callback);
         } catch (Exception exception) {
             callback.error(exception);
         }
@@ -330,8 +364,8 @@ public class BitchatPlugin extends Plugin {
      * Connectivity Listeners
      */
 
-    protected void onFoundEvent(String peerID) {
-        FoundEvent event = new FoundEvent(peerID);
+    protected void onFoundEvent(String peerID, String message) {
+        FoundEvent event = new FoundEvent(peerID, message);
 
         notifyListeners(FOUND_EVENT, event.toJSObject());
     }
@@ -352,6 +386,12 @@ public class BitchatPlugin extends Plugin {
         DisconnectedEvent event = new DisconnectedEvent(peerID);
 
         notifyListeners(DISCONNECTED_EVENT, event.toJSObject());
+    }
+
+    protected void onEstablishedEvent(String peerID) {
+        EstablishedEvent event = new EstablishedEvent(peerID);
+
+        notifyListeners(ESTABLISHED_EVENT, event.toJSObject());
     }
 
     /**

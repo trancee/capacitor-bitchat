@@ -77,6 +77,8 @@ export default config;
 * [`start(...)`](#start)
 * [`isStarted()`](#isstarted)
 * [`stop()`](#stop)
+* [`establish(...)`](#establish)
+* [`isEstablished(...)`](#isestablished)
 * [`send(...)`](#send)
 * [`checkPermissions()`](#checkpermissions)
 * [`requestPermissions(...)`](#requestpermissions)
@@ -86,6 +88,7 @@ export default config;
 * [`addListener('onLost', ...)`](#addlisteneronlost-)
 * [`addListener('onConnected', ...)`](#addlisteneronconnected-)
 * [`addListener('onDisconnected', ...)`](#addlistenerondisconnected-)
+* [`addListener('onEstablished', ...)`](#addlisteneronestablished-)
 * [`addListener('onSent', ...)`](#addlisteneronsent-)
 * [`addListener('onReceived', ...)`](#addlisteneronreceived-)
 * [`addListener('onPeerListUpdated', ...)`](#addlisteneronpeerlistupdated-)
@@ -157,6 +160,36 @@ isStarted() => Promise<IsStartedResult>
 ```typescript
 stop() => Promise<void>
 ```
+
+--------------------
+
+
+### establish(...)
+
+```typescript
+establish(options?: EstablishOptions | undefined) => Promise<EstablishResult>
+```
+
+| Param         | Type                                                          |
+| ------------- | ------------------------------------------------------------- |
+| **`options`** | <code><a href="#establishoptions">EstablishOptions</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#establishresult">EstablishResult</a>&gt;</code>
+
+--------------------
+
+
+### isEstablished(...)
+
+```typescript
+isEstablished(options?: IsEstablishedOptions | undefined) => Promise<IsEstablishedResult>
+```
+
+| Param         | Type                                                                  |
+| ------------- | --------------------------------------------------------------------- |
+| **`options`** | <code><a href="#isestablishedoptions">IsEstablishedOptions</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#isestablishedresult">IsEstablishedResult</a>&gt;</code>
 
 --------------------
 
@@ -302,6 +335,24 @@ addListener(eventName: 'onDisconnected', listenerFunc: OnDisconnectedListener) =
 --------------------
 
 
+### addListener('onEstablished', ...)
+
+```typescript
+addListener(eventName: 'onEstablished', listenerFunc: OnEstablishedListener) => Promise<PluginListenerHandle>
+```
+
+| Param              | Type                                                                    |
+| ------------------ | ----------------------------------------------------------------------- |
+| **`eventName`**    | <code>'onEstablished'</code>                                            |
+| **`listenerFunc`** | <code><a href="#onestablishedlistener">OnEstablishedListener</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+**Since:** 0.1.5
+
+--------------------
+
+
 ### addListener('onSent', ...)
 
 ```typescript
@@ -438,6 +489,34 @@ removeAllListeners() => Promise<void>
 | **`isStarted`** | <code>boolean</code> |
 
 
+#### EstablishResult
+
+| Prop                | Type                 | Since |
+| ------------------- | -------------------- | ----- |
+| **`isEstablished`** | <code>boolean</code> | 0.1.5 |
+
+
+#### EstablishOptions
+
+| Prop         | Type                                      | Since |
+| ------------ | ----------------------------------------- | ----- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> | 0.1.5 |
+
+
+#### IsEstablishedResult
+
+| Prop                | Type                 | Since |
+| ------------------- | -------------------- | ----- |
+| **`isEstablished`** | <code>boolean</code> | 0.1.5 |
+
+
+#### IsEstablishedOptions
+
+| Prop         | Type                                      | Since |
+| ------------ | ----------------------------------------- | ----- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> | 0.1.5 |
+
+
 #### SendResult
 
 | Prop            | Type                                            |
@@ -486,9 +565,10 @@ removeAllListeners() => Promise<void>
 
 #### OnFoundEvent
 
-| Prop         | Type                                      |
-| ------------ | ----------------------------------------- |
-| **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
+| Prop          | Type                                      | Since |
+| ------------- | ----------------------------------------- | ----- |
+| **`peerID`**  | <code><a href="#peerid">PeerID</a></code> |       |
+| **`message`** | <code><a href="#base64">Base64</a></code> | 0.1.5 |
 
 
 #### OnLostEvent
@@ -510,6 +590,13 @@ removeAllListeners() => Promise<void>
 | Prop         | Type                                      |
 | ------------ | ----------------------------------------- |
 | **`peerID`** | <code><a href="#peerid">PeerID</a></code> |
+
+
+#### OnEstablishedEvent
+
+| Prop         | Type                                      | Since |
+| ------------ | ----------------------------------------- | ----- |
+| **`peerID`** | <code><a href="#peerid">PeerID</a></code> | 0.1.5 |
 
 
 #### OnSentEvent
@@ -541,7 +628,7 @@ removeAllListeners() => Promise<void>
 | Prop            | Type                                      | Since |
 | --------------- | ----------------------------------------- | ----- |
 | **`peerID`**    | <code><a href="#peerid">PeerID</a></code> | 0.1.4 |
-| **`oldPeerID`** | <code><a href="#peerid">PeerID</a></code> |       |
+| **`oldPeerID`** | <code><a href="#peerid">PeerID</a></code> | 0.1.5 |
 | **`message`**   | <code><a href="#base64">Base64</a></code> |       |
 
 
@@ -619,6 +706,11 @@ removeAllListeners() => Promise<void>
 #### OnDisconnectedListener
 
 <code>(event: <a href="#ondisconnectedevent">OnDisconnectedEvent</a>): void</code>
+
+
+#### OnEstablishedListener
+
+<code>(event: <a href="#onestablishedevent">OnEstablishedEvent</a>): void</code>
 
 
 #### OnSentListener

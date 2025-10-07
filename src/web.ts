@@ -10,6 +10,10 @@ import type {
   StartOptions,
   StartResult,
   IsStartedResult,
+  EstablishOptions,
+  EstablishResult,
+  IsEstablishedOptions,
+  IsEstablishedResult,
   SendOptions,
   SendResult,
   PermissionStatus,
@@ -18,6 +22,7 @@ import type {
 
 let isInitialized = false;
 let isStarted = false;
+let isEstablished = false;
 const peerID = getID();
 let announceInterval = 30000; // 30 seconds
 let announceIntervalTimeout: ReturnType<typeof setInterval>;
@@ -66,6 +71,24 @@ export class BitchatWeb extends WebPlugin implements BitchatPlugin {
     clearInterval(announceIntervalTimeout);
     isStarted = false;
     this.notifyListeners('onStopped', {});
+  }
+
+  async establish(options: EstablishOptions): Promise<EstablishResult> {
+    console.info('establish', options);
+    if (!isInitialized) {
+      throw new Error('not initialized');
+    }
+    if (!isStarted) {
+      throw new Error('not started');
+    }
+    const peerID = options.peerID;
+    isEstablished = true;
+    setTimeout(() => this.notifyListeners('onEstablished', { peerID }), 1000);
+    return { isEstablished };
+  }
+  async isEstablished(options: IsEstablishedOptions): Promise<IsEstablishedResult> {
+    console.info('isEstablished', options, { isEstablished });
+    return { isEstablished };
   }
 
   async send(options: SendOptions): Promise<SendResult> {

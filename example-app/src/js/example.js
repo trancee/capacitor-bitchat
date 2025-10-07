@@ -1,5 +1,7 @@
 import { Bitchat } from '@capacitor-trancee/bitchat'
 
+let peers = {}
+
 const scrollToBottom = t => t.scrollTop = t.scrollHeight
 
 const statusEl = document.querySelector("#status")
@@ -68,7 +70,29 @@ window.testStop = async () => {
     statusEl.value = ""
     eventsEl.value = ""
 
+    peers = {}
+
     const result = await window.execute("stop", options)
+}
+
+window.testEstablish = async () => {
+    const options = {}
+
+    if (document.getElementById("peers") && document.getElementById("peers").value.length) {
+        options.peerID = document.getElementById("peers").value
+    }
+
+    const result = await window.execute("establish", options)
+}
+
+window.testIsEstablished = async () => {
+    const options = {}
+
+    if (document.getElementById("peers") && document.getElementById("peers").value.length) {
+        options.peerID = document.getElementById("peers").value
+    }
+
+    const result = await window.execute("isEstablished", options)
 }
 
 window.testSend = async () => {
@@ -148,7 +172,7 @@ window.addListeners = async () => {
 
                 const peerID = event.peerID
 
-                addOption(peerID, peerID)
+                addOrUpdatePeer(peerID)
             }),
         await Bitchat.addListener('onLost',
             (event) => {
@@ -156,7 +180,7 @@ window.addListeners = async () => {
 
                 const peerID = event.peerID
 
-                removeOption(peerID)
+                removePeer(peerID)
             }),
 
         await Bitchat.addListener('onConnected',
@@ -164,12 +188,24 @@ window.addListeners = async () => {
                 logEvent(`onConnected(${JSON.stringify(event) || ""})`)
 
                 const peerID = event.peerID
+
+                addOrUpdatePeer(peerID, { isConnected: true })
             }),
         await Bitchat.addListener('onDisconnected',
             (event) => {
                 logEvent(`onDisconnected(${JSON.stringify(event) || ""})`)
 
                 const peerID = event.peerID
+
+                addOrUpdatePeer(peerID, { isConnected: false, hasSession: false })
+            }),
+        await Bitchat.addListener('onEstablished',
+            (event) => {
+                logEvent(`onEstablished(${JSON.stringify(event) || ""})`)
+
+                const peerID = event.peerID
+
+                addOrUpdatePeer(peerID, { hasSession: true })
             }),
 
         await Bitchat.addListener('onSent',
@@ -203,12 +239,12 @@ window.addListeners = async () => {
                 peers.forEach(peerID => {
                     delete removePeers[peerID]
 
-                    if (getOption(peerID)) return
-                    addOption(peerID, peerID)
+                    if (getPeer(peerID)) return
+                    addOrUpdatePeer(peerID)
                 })
 
                 Object.keys(removePeers).forEach(peerID => {
-                    removeOption(peerID)
+                    removePeer(peerID)
                 })
             }),
         await Bitchat.addListener('onPeerIDChanged',
@@ -220,11 +256,10 @@ window.addListeners = async () => {
 
                 const message = event.message
 
-                const option = getOption(oldPeerID)
-                if (option) {
-                    option.value = peerID
-                    option.text = `${peerID}  (${rssi} dBm)`
-                }
+                const peer = getPeer(oldPeerID)
+                peer.id = peerID
+                addOrUpdatePeer(peerID, peer)
+                removePeer(oldPeerID)
             }),
 
         await Bitchat.addListener('onRSSIUpdated',
@@ -234,9 +269,7 @@ window.addListeners = async () => {
                 const peerID = event.peerID
                 const rssi = event.rssi
 
-                const option = getOption(peerID)
-                if (option)
-                    option.text = `${peerID}  (${rssi} dBm)`
+                addOrUpdatePeer(peerID, { rssi })
             }),
     ])
 }
@@ -264,18 +297,60 @@ window.toggle = async (element) => {
     }
 }
 
+function addOrUpdatePeer(peerID, info = {}) {
+    if (!peerID || peerID === "unknown") return
+
+    const existing = peers[peerID]
+    if (existing) {
+        if (Object.keys(info).length === 1 && info.rssi) {
+        } else {
+            info.lastSeen = Date.now()
+        }
+        peers[peerID] = Object.assign(existing, info)
+    } else {
+        peers[peerID] = Object.assign({
+            id: peerID,
+            rssi: null,
+            isConnected: true,
+            isDirect: false,
+            isVerified: false,
+            hasSession: false,
+            lastSeen: Date.now()
+        }, info)
+    }
+
+    let text = peerID
+    if (peers[peerID].rssi !== null) {
+        text += ` (${peers[peerID].rssi} dBm)`
+    }
+    if (peers[peerID].hasSession) {
+        text = `🔒 ${text}`
+    }
+    const timeSince = (Date.now() - peers[peerID].lastSeen) / 1000
+    text += ` ${timeSince.toFixed(0)}s`
+    addOption(peerID, text)
+}
+function getPeer(peerID) {
+    return peers[peerID]
+}
+function removePeer(peerID) {
+    delete peers[peerID]
+
+    removeOption(peerID)
+}
+
 function addOption(value, text) {
-    const select = document.querySelector("#peers")
+    const option = getOption(value)
 
-    // Check if the value already exists
-    const exists = Array.from(select.options).some(option => option.value === value)
-
-    if (!exists) {
+    if (option) {
+        option.text = text
+    } else {
         const option = document.createElement("option")
 
         option.value = value
         option.text = text
 
+        const select = document.querySelector("#peers")
         select.add(option)
     }
 }

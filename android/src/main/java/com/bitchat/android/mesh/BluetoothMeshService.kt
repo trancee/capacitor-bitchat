@@ -141,6 +141,11 @@ class BluetoothMeshService(private val context: Context) {
         try {
             connectionManager.setNicknameResolver { pid -> peerManager.getPeerNickname(pid) }
         } catch (_: Exception) { }
+
+//        encryptionService.onSessionEstablished = { peerID ->
+//            delegate?.onEstablished(peerID) // trancee
+//        }
+
         // PeerManager delegates to main mesh service delegate
         peerManager.delegate = object : PeerManagerDelegate {
             override fun onPeerListUpdated(peerIDs: List<String>) {
@@ -170,6 +175,7 @@ class BluetoothMeshService(private val context: Context) {
                     delay(1000)
                     storeForwardManager.sendCachedMessages(peerID)
                 }
+                delegate?.onEstablished(peerID) // trancee
             }
             
             override fun sendHandshakeResponse(peerID: String, response: ByteArray) {
@@ -322,8 +328,6 @@ class BluetoothMeshService(private val context: Context) {
             
             override fun updatePeerIDBinding(newPeerID: String, nickname: String,
                                            publicKey: ByteArray, previousPeerID: String?) {
-                delegate?.onPeerIDChanged(newPeerID, previousPeerID, nickname) // trancee
-
                 Log.d(TAG, "Updating peer ID binding: $newPeerID (was: $previousPeerID) with nickname: $nickname and public key: ${publicKey.toHexString().take(16)}...")
                 // Update peer mapping in the PeerManager for peer ID rotation support
                 peerManager.addOrUpdatePeer(newPeerID, nickname)
@@ -333,6 +337,8 @@ class BluetoothMeshService(private val context: Context) {
 
                 // If there was a previous peer ID, remove it to avoid duplicates
                 previousPeerID?.let { oldPeerID ->
+                    delegate?.onPeerIDChanged(newPeerID, oldPeerID, nickname) // trancee
+
                     peerManager.removePeer(oldPeerID)
                 }
                 
@@ -410,6 +416,7 @@ class BluetoothMeshService(private val context: Context) {
                             // Mark this peer as directly connected for UI
                             try {
                                 peerManager.getPeerInfo(pid)?.let {
+                                    peer ->
                                     // Set direct connection flag
                                     // (This will also trigger a peer list update)
                                     peerManager.setDirectConnection(pid, true)
@@ -417,6 +424,7 @@ class BluetoothMeshService(private val context: Context) {
                                     try {
                                         // Note: UI observes via didUpdatePeerList, but we can also update ChatState on a timer
                                     } catch (_: Exception) { }
+                                    delegate?.onFound(peer.id, peer.nickname) // trancee
                                 }
                             } catch (_: Exception) { }
 
@@ -426,9 +434,6 @@ class BluetoothMeshService(private val context: Context) {
                     }
                     // Track for sync
                     try { gossipSyncManager.onPublicPacketSeen(routed.packet) } catch (_: Exception) { }
-                }
-                routed.peerID?.let { peerID ->
-                    delegate?.onFound(peerID) // trancee
                 }
             }
             
@@ -1193,13 +1198,14 @@ interface BluetoothMeshDelegate {
     // trancee
     fun onStarted(peerID: String, success: Boolean?)
     fun onStopped()
-    fun onFound(peerID: String)
+    fun onFound(peerID: String, nickname: String)
     fun onLost(peerID: String)
     fun onConnected(peerID: String)
     fun onDisconnected(peerID: String)
+    fun onEstablished(peerID: String)
     fun onSent(messageID: String, peerID: String?)
     fun onRSSIUpdated(peerID: String, rssi: Int)
     fun onPeerInfoUpdated(peerID: String, nickname: String, isVerified: Boolean)
-    fun onPeerIDChanged(peerID: String, previousPeerID: String?, nickname: String)
+    fun onPeerIDChanged(peerID: String, oldPeerID: String?, nickname: String)
     // trancee
 }
