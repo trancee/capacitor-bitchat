@@ -37,7 +37,7 @@ class FragmentManager {
     var delegate: FragmentManagerDelegate? = null
     
     // Coroutines
-    private val managerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var managerScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     init {
         startPeriodicCleanup()
@@ -257,7 +257,8 @@ class FragmentManager {
      * Start periodic cleanup of old fragments - matches iOS maintenance timer
      */
     private fun startPeriodicCleanup() {
-        managerScope.launch {
+        managerScope = managerScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
+        managerScope?.launch {
             while (isActive) {
                 delay(CLEANUP_INTERVAL)
                 cleanupOldFragments()
@@ -277,7 +278,8 @@ class FragmentManager {
      * Shutdown the manager
      */
     fun shutdown() {
-        managerScope.cancel()
+        managerScope?.cancel()
+        managerScope = null
         clearAllFragments()
     }
 }

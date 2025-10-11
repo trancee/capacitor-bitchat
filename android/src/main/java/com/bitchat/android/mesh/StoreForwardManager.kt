@@ -42,7 +42,7 @@ class StoreForwardManager {
     var delegate: StoreForwardManagerDelegate? = null
     
     // Coroutines
-    private val managerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var managerScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     init {
         startPeriodicCleanup()
@@ -126,7 +126,7 @@ class StoreForwardManager {
         
         cachedMessagesSentToPeer.add(peerID)
         
-        managerScope.launch {
+        managerScope?.launch {
             cleanupMessageCache()
             
             val messagesToSend = mutableListOf<StoredMessage>()
@@ -240,7 +240,8 @@ class StoreForwardManager {
      * Start periodic cleanup
      */
     private fun startPeriodicCleanup() {
-        managerScope.launch {
+        managerScope = managerScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
+        managerScope?.launch {
             while (isActive) {
                 delay(CLEANUP_INTERVAL)
                 cleanupMessageCache()
@@ -301,7 +302,8 @@ class StoreForwardManager {
      * Shutdown the manager
      */
     fun shutdown() {
-        managerScope.cancel()
+        managerScope?.cancel()
+        managerScope = null
         clearAllCache()
     }
 }

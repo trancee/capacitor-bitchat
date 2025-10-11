@@ -33,7 +33,7 @@ class PacketProcessor(private val myPeerID: String) {
     private val packetRelayManager = PacketRelayManager(myPeerID)
     
     // Coroutines
-    private val processorScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var processorScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     // Per-peer actors to serialize packet processing
     // Each peer gets its own actor that processes packets sequentially
@@ -41,7 +41,7 @@ class PacketProcessor(private val myPeerID: String) {
     private val peerActors = mutableMapOf<String, CompletableDeferred<Unit>>()
     
     @OptIn(ObsoleteCoroutinesApi::class)
-    private fun getOrCreateActorForPeer(peerID: String) = processorScope.actor<RoutedPacket>(
+    private fun getOrCreateActorForPeer(peerID: String) = processorScope?.actor<RoutedPacket>(
         capacity = Channel.UNLIMITED
     ) {
         Log.d(TAG, "🎭 Created packet actor for peer: ${formatPeerForLog(peerID)}")
@@ -77,13 +77,13 @@ class PacketProcessor(private val myPeerID: String) {
             return
         }
 
-
+        processorScope = processorScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
         
         // Get or create actor for this peer
-        val actor = actors.getOrPut(peerID) { getOrCreateActorForPeer(peerID) }
+        val actor = actors.getOrPut(peerID) { getOrCreateActorForPeer(peerID)!! }
         
         // Send packet to peer's dedicated actor for serialized processing
-        processorScope.launch {
+        processorScope?.launch {
             try {
                 actor.send(routed)
             } catch (e: Exception) {
@@ -250,7 +250,7 @@ class PacketProcessor(private val myPeerID: String) {
     fun getDebugInfo(): String {
         return buildString {
             appendLine("=== Packet Processor Debug Info ===")
-            appendLine("Processor Scope Active: ${processorScope.isActive}")
+            appendLine("Processor Scope Active: ${processorScope?.isActive}")
             appendLine("Active Peer Actors: ${actors.size}")
             appendLine("My Peer ID: $myPeerID")
             
@@ -279,8 +279,9 @@ class PacketProcessor(private val myPeerID: String) {
         packetRelayManager.shutdown()
         
         // Cancel the main scope
-        processorScope.cancel()
-        
+        processorScope?.cancel()
+        processorScope = null
+
         Log.d(TAG, "PacketProcessor shutdown complete")
     }
 }

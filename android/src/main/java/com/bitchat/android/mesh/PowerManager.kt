@@ -51,7 +51,7 @@ class PowerManager(private val context: Context) {
     private var batteryLevel = 100
     private var isAppInBackground = false
     
-    private val powerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var powerScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var dutyCycleJob: Job? = null
     
     var delegate: PowerManagerDelegate? = null
@@ -92,12 +92,14 @@ class PowerManager(private val context: Context) {
     
     fun start() {
         Log.i(TAG, "Starting power management")
+        powerScope = powerScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
         startDutyCycle()
     }
     
     fun stop() {
         Log.i(TAG, "Stopping power management")
-        powerScope.cancel()
+        powerScope?.cancel()
+        powerScope = null
         unregisterBatteryReceiver()
     }
     
@@ -275,7 +277,7 @@ class PowerManager(private val context: Context) {
             PowerMode.PERFORMANCE -> return // No duty cycle
         }
         
-        dutyCycleJob = powerScope.launch {
+        dutyCycleJob = powerScope?.launch {
             while (isActive && shouldUseDutyCycle()) {
                 // Scan ON period
                 Log.d(TAG, "Duty cycle: Scan ON for ${onDuration}ms")

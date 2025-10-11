@@ -10,7 +10,6 @@ import android.content.Context
 import android.os.ParcelUuid
 import android.util.Log
 import com.bitchat.android.protocol.BitchatPacket
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
@@ -21,7 +20,6 @@ import kotlinx.coroutines.Job
  */
 class BluetoothGattClientManager(
     private val context: Context,
-    private val connectionScope: CoroutineScope,
     private val connectionTracker: BluetoothConnectionTracker,
     private val permissionManager: BluetoothPermissionManager,
     private val powerManager: PowerManager,
@@ -78,29 +76,29 @@ class BluetoothGattClientManager(
     /**
      * Start client manager
      */
-    fun start(): Boolean {
+    fun start(): Job? {
         if (isActive) {
             Log.d(TAG, "GATT client already active; start is a no-op")
-            return true
+            return null//true
         }
         if (!permissionManager.hasBluetoothPermissions()) {
             Log.e(TAG, "Missing Bluetooth permissions")
-            return false
+            throw Exception("Missing Bluetooth permissions")
         }
         
         if (bluetoothAdapter?.isEnabled != true) {
             Log.e(TAG, "Bluetooth is not enabled")
-            return false
+            throw Exception("Bluetooth is not enabled")
         }
         
         if (bleScanner == null) {
             Log.e(TAG, "BLE scanner not available")
-            return false
+            throw Exception("BLE scanner not available")
         }
         
         isActive = true
         
-        connectionScope.launch {
+        return BluetoothConnectionManager.connectionScope?.launch {
             if (powerManager.shouldUseDutyCycle()) {
                 Log.i(TAG, "Using power-aware duty cycling")
             } else {
@@ -110,8 +108,6 @@ class BluetoothGattClientManager(
             // Start RSSI monitoring
             startRSSIMonitoring()
         }
-        
-        return true
     }
     
     /**
@@ -128,8 +124,8 @@ class BluetoothGattClientManager(
         }
 
         isActive = false
-        
-        connectionScope.launch {
+
+        BluetoothConnectionManager.connectionScope?.launch {
             // Disconnect all client connections decisively
             try {
                 val conns = connectionTracker.getConnectedDevices().values.filter { it.isClient && it.gatt != null }
@@ -162,7 +158,7 @@ class BluetoothGattClientManager(
     @SuppressLint("MissingPermission")
     private fun startRSSIMonitoring() {
         rssiMonitoringJob?.cancel()
-        rssiMonitoringJob = connectionScope.launch {
+        rssiMonitoringJob = BluetoothConnectionManager.connectionScope?.launch {
             while (isActive) {
                 try {
                     // Request RSSI from all client connections
@@ -215,7 +211,7 @@ class BluetoothGattClientManager(
             Log.w(TAG, "Scan rate limited: need to wait ${remainingWait}ms before starting scan")
             
             // Schedule delayed scan start
-            connectionScope.launch {
+            BluetoothConnectionManager.connectionScope?.launch {
                 delay(remainingWait)
                 if (isActive && !isCurrentlyScanning) {
                     startScanning()
@@ -259,7 +255,7 @@ class BluetoothGattClientManager(
                     6 -> {
                         Log.e(TAG, "SCAN_FAILED_SCANNING_TOO_FREQUENTLY")
                         Log.w(TAG, "Scan failed due to rate limiting - will retry after delay")
-                        connectionScope.launch {
+                        BluetoothConnectionManager.connectionScope?.launch {
                             delay(10000) // Wait 10 seconds before retrying
                             if (isActive) {
                                 startScanning()
@@ -373,7 +369,7 @@ class BluetoothGattClientManager(
                 if (newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
                     Log.i(TAG, "Client: Successfully connected to $deviceAddress. Requesting MTU...")
                     // Request a larger MTU. Must be done before any data transfer.
-                    connectionScope.launch {
+                    BluetoothConnectionManager.connectionScope?.launch {
                         delay(200) // A small delay can improve reliability of MTU request.
                         gatt.requestMtu(517)
                     }
@@ -391,7 +387,7 @@ class BluetoothGattClientManager(
                     // Notify higher layers about device disconnection to update direct flags
                     delegate?.onDeviceDisconnected(gatt.device)
 
-                    connectionScope.launch {
+                    BluetoothConnectionManager.connectionScope?.launch {
                         delay(500) // CLEANUP_DELAY
                         try {
                             gatt.close()
@@ -446,8 +442,8 @@ class BluetoothGattClientManager(
                             if (descriptor != null) {
                                 descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                                 gatt.writeDescriptor(descriptor)
-                                
-                                connectionScope.launch {
+
+                                BluetoothConnectionManager.connectionScope?.launch {
                                     delay(200)
                                     Log.i(TAG, "Client: Connection setup complete for $deviceAddress")
                                     delegate?.onDeviceConnected(device)
@@ -524,8 +520,8 @@ class BluetoothGattClientManager(
         // Respect debug setting
         val enabled = true//try { com.bitchat.android.ui.debug.DebugSettingsManager.getInstance().gattClientEnabled.value } catch (_: Exception) { true }
         if (!isActive || !enabled) return
-        
-        connectionScope.launch {
+
+        BluetoothConnectionManager.connectionScope?.launch {
             stopScanning()
             delay(1000) // Extra delay to avoid rate limiting
             

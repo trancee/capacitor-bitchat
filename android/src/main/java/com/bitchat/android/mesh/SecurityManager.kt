@@ -33,7 +33,7 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
     var delegate: SecurityManagerDelegate? = null
     
     // Coroutines
-    private val managerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var managerScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     init {
         startPeriodicCleanup()
@@ -308,7 +308,8 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
      * Start periodic cleanup
      */
     private fun startPeriodicCleanup() {
-        managerScope.launch {
+        managerScope = managerScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
+        managerScope?.launch {
             while (isActive) {
                 delay(CLEANUP_INTERVAL)
                 cleanupOldData()
@@ -378,7 +379,8 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
      * Shutdown the manager
      */
     fun shutdown() {
-        managerScope.cancel()
+        managerScope?.cancel()
+        managerScope = null
         clearAllData()
     }
 }

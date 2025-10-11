@@ -34,6 +34,10 @@ class BluetoothMeshService(private val context: Context) {
     companion object {
         private const val TAG = "BluetoothMeshService"
         private const val MAX_TTL: UByte = 7u
+
+        // Coroutines
+        @JvmStatic
+        var serviceScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     }
     
     // Core components - each handling specific responsibilities
@@ -57,9 +61,6 @@ class BluetoothMeshService(private val context: Context) {
     var delegate: BluetoothMeshDelegate? = null
     var announceInterval: Long = 30000 // trancee
 
-    // Coroutines
-    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
     init {
         setupDelegates()
         messageHandler.packetProcessor = packetProcessor
@@ -68,7 +69,6 @@ class BluetoothMeshService(private val context: Context) {
         // Initialize sync manager (needs serviceScope)
         gossipSyncManager = GossipSyncManager(
             myPeerID = myPeerID,
-            scope = serviceScope,
             configProvider = object : GossipSyncManager.ConfigProvider {
                 override fun seenCapacity(): Int = try {
                     500//com.bitchat.android.ui.debug.DebugPreferenceManager.getSeenPacketCapacity(500)
@@ -102,7 +102,7 @@ class BluetoothMeshService(private val context: Context) {
      * Start periodic debug logging every 10 seconds
      */
     private fun startPeriodicDebugLogging() {
-        serviceScope.launch {
+        serviceScope?.launch {
             while (isActive) {
                 try {
                     delay(10000) // 10 seconds
@@ -121,7 +121,7 @@ class BluetoothMeshService(private val context: Context) {
      * Send broadcast announcement every 30 seconds
      */
     private fun sendPeriodicBroadcastAnnounce() {
-        serviceScope.launch {
+        serviceScope?.launch {
             while (isActive) {
                 try {
                     delay(announceInterval) // trancee
@@ -167,7 +167,7 @@ class BluetoothMeshService(private val context: Context) {
         securityManager.delegate = object : SecurityManagerDelegate {
             override fun onKeyExchangeCompleted(peerID: String, peerPublicKeyData: ByteArray) {
                 // Send announcement and cached messages after key exchange
-                serviceScope.launch {
+                serviceScope?.launch {
                     delay(100)
                     sendAnnouncementToPeer(peerID)
                     
@@ -395,11 +395,11 @@ class BluetoothMeshService(private val context: Context) {
             }
             
             override fun handleNoiseEncrypted(routed: RoutedPacket) {
-                serviceScope.launch { messageHandler.handleNoiseEncrypted(routed) }
+                serviceScope?.launch { messageHandler.handleNoiseEncrypted(routed) }
             }
             
             override fun handleAnnounce(routed: RoutedPacket) {
-                serviceScope.launch {
+                serviceScope?.launch {
                     // Process the announce
                     val isFirst = messageHandler.handleAnnounce(routed)
 
@@ -437,7 +437,7 @@ class BluetoothMeshService(private val context: Context) {
             }
             
             override fun handleMessage(routed: RoutedPacket) {
-                serviceScope.launch { messageHandler.handleMessage(routed) }
+                serviceScope?.launch { messageHandler.handleMessage(routed) }
                 // Track broadcast messages for sync
                 try {
                     val pkt = routed.packet
@@ -449,7 +449,7 @@ class BluetoothMeshService(private val context: Context) {
             }
             
             override fun handleLeave(routed: RoutedPacket) {
-                serviceScope.launch { messageHandler.handleLeave(routed) }
+                serviceScope?.launch { messageHandler.handleLeave(routed) }
                 routed.peerID?.let { peerID ->
                     delegate?.onLost(peerID) // trancee
                 }
@@ -494,7 +494,7 @@ class BluetoothMeshService(private val context: Context) {
             
             override fun onDeviceConnected(device: android.bluetooth.BluetoothDevice) {
                 // Send initial announcements after services are ready
-                serviceScope.launch {
+                serviceScope?.launch {
                     delay(200)
                     sendBroadcastAnnounce()
                 }
@@ -547,20 +547,30 @@ class BluetoothMeshService(private val context: Context) {
         }
         
         Log.i(TAG, "Starting Bluetooth mesh service with peer ID: $myPeerID")
-        
-        if (connectionManager.startServices()) {
+
+        serviceScope = serviceScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+        val job = connectionManager.startServices()
+        if (job != null) {
             isActive = true
 
-            // Start periodic announcements for peer discovery and connectivity
-            sendPeriodicBroadcastAnnounce()
-            Log.d(TAG, "Started periodic broadcast announcements (every 30 seconds)")
-            // Start periodic syncs
-            gossipSyncManager.start()
+            job.invokeOnCompletion { cause ->
+                if (cause != null) {
+                    Log.e(TAG, "Failed to start Bluetooth services: ${cause.message}")
+                    isActive = false
+                } else {
+                    // Start periodic announcements for peer discovery and connectivity
+                    sendPeriodicBroadcastAnnounce()
+                    Log.d(TAG, "Started periodic broadcast announcements (every 30 seconds)")
+                    // Start periodic syncs
+                    gossipSyncManager.start()
+                }
+
+                delegate?.onStarted(myPeerID, isActive) // trancee
+            }
         } else {
             Log.e(TAG, "Failed to start Bluetooth services")
         }
-
-        delegate?.onStarted(myPeerID, isActive) // trancee
     }
     
     /**
@@ -578,22 +588,25 @@ class BluetoothMeshService(private val context: Context) {
         // Send leave announcement
         sendLeaveAnnouncement()
         
-        serviceScope.launch {
+        serviceScope?.launch {
             delay(200) // Give leave message time to send
-            
-            // Stop all components
-            gossipSyncManager.stop()
-            connectionManager.stopServices()
-            peerManager.shutdown()
-            fragmentManager.shutdown()
-            securityManager.shutdown()
-            storeForwardManager.shutdown()
-            messageHandler.shutdown()
-            packetProcessor.shutdown()
+
+            runBlocking {
+                // Stop all components
+                gossipSyncManager.stop()
+                connectionManager.stopServices()
+                peerManager.shutdown()
+                fragmentManager.shutdown()
+                securityManager.shutdown()
+                storeForwardManager.shutdown()
+                messageHandler.shutdown()
+                packetProcessor.shutdown()
+            }
+
+            serviceScope?.cancel()
+            serviceScope = null
 
             delegate?.onStopped() // trancee
-
-            serviceScope.cancel()
         }
     }
     
@@ -603,7 +616,7 @@ class BluetoothMeshService(private val context: Context) {
     fun sendMessage(content: String, mentions: List<String> = emptyList(), channel: String? = null) {
         if (content.isEmpty()) return
         
-        serviceScope.launch {
+        serviceScope?.launch {
             val packet = BitchatPacket(
                 version = 1u,
                 type = MessageType.MESSAGE.value,
@@ -635,7 +648,7 @@ class BluetoothMeshService(private val context: Context) {
                 return
             }
             Log.d(TAG, "📦 Encoded payload: ${payload.size} bytes")
-        serviceScope.launch {
+        serviceScope?.launch {
             val packet = BitchatPacket(
                 version = 2u,  // FILE_TRANSFER uses v2 for 4-byte payload length to support large files
                 type = MessageType.FILE_TRANSFER.value,
@@ -665,7 +678,7 @@ class BluetoothMeshService(private val context: Context) {
         try {
             Log.d(TAG, "📤 sendFilePrivate (ENCRYPTED): to=$recipientPeerID, name=${file.fileName}, size=${file.fileSize}")
             
-            serviceScope.launch {
+            serviceScope?.launch {
                 // Check if we have an established Noise session
                 if (encryptionService.hasEstablishedSession(recipientPeerID)) {
                     try {
@@ -744,7 +757,7 @@ class BluetoothMeshService(private val context: Context) {
         if (content.isEmpty() || recipientPeerID.isEmpty()) return
         if (recipientNickname.isEmpty()) return
         
-        serviceScope.launch {
+        serviceScope?.launch {
             val finalMessageID = messageID ?: java.util.UUID.randomUUID().toString()
             
             Log.d(TAG, "📨 Sending PM to $recipientPeerID: ${content.take(30)}...")
@@ -814,7 +827,7 @@ class BluetoothMeshService(private val context: Context) {
      * Uses same encryption approach as iOS SimplifiedBluetoothService
      */
     fun sendReadReceipt(messageID: String, recipientPeerID: String, readerNickname: String) {
-        serviceScope.launch {
+        serviceScope?.launch {
             Log.d(TAG, "📖 Sending read receipt for message $messageID to $recipientPeerID")
             
             try {
@@ -855,7 +868,7 @@ class BluetoothMeshService(private val context: Context) {
      */
     fun sendBroadcastAnnounce() {
         Log.d(TAG, "Sending broadcast announce")
-        serviceScope.launch {
+        serviceScope?.launch {
             val nickname = delegate?.getNickname() ?: myPeerID
             
             // Get the static public key for the announcement

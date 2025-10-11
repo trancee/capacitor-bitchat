@@ -28,7 +28,7 @@ class PacketRelayManager(private val myPeerID: String) {
     var delegate: PacketRelayManagerDelegate? = null
     
     // Coroutines
-    private val relayScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var relayScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     /**
      * Main entry point for relay decisions
@@ -142,7 +142,7 @@ class PacketRelayManager(private val myPeerID: String) {
     fun getDebugInfo(): String {
         return buildString {
             appendLine("=== Packet Relay Manager Debug Info ===")
-            appendLine("Relay Scope Active: ${relayScope.isActive}")
+            appendLine("Relay Scope Active: ${relayScope?.isActive}")
             appendLine("My Peer ID: ${myPeerID}")
             appendLine("Network Size: ${delegate?.getNetworkSize() ?: "unknown"}")
         }
@@ -153,7 +153,8 @@ class PacketRelayManager(private val myPeerID: String) {
      */
     fun shutdown() {
         Log.d(TAG, "Shutting down PacketRelayManager")
-        relayScope.cancel()
+        relayScope?.cancel()
+        relayScope = null
     }
 }
 

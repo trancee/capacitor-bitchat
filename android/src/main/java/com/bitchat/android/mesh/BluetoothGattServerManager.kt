@@ -10,7 +10,7 @@ import android.content.Context
 import android.os.ParcelUuid
 import android.util.Log
 import com.bitchat.android.protocol.BitchatPacket
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
@@ -20,7 +20,6 @@ import java.util.*
  */
 class BluetoothGattServerManager(
     private val context: Context,
-    private val connectionScope: CoroutineScope,
     private val connectionTracker: BluetoothConnectionTracker,
     private val permissionManager: BluetoothPermissionManager,
     private val powerManager: PowerManager,
@@ -67,35 +66,33 @@ class BluetoothGattServerManager(
     /**
      * Start GATT server
      */
-    fun start(): Boolean {
+    fun start(): Job? {
         if (isActive) {
             Log.d(TAG, "GATT server already active; start is a no-op")
-            return true
+            return null//true
         }
         if (!permissionManager.hasBluetoothPermissions()) {
             Log.e(TAG, "Missing Bluetooth permissions")
-            return false
+            throw Exception("Missing Bluetooth permissions")
         }
         
         if (bluetoothAdapter?.isEnabled != true) {
             Log.e(TAG, "Bluetooth is not enabled")
-            return false
+            throw Exception("Bluetooth is not enabled")
         }
         
         if (bleAdvertiser == null) {
             Log.e(TAG, "BLE advertiser not available")
-            return false
+            throw Exception("BLE advertiser not available")
         }
         
         isActive = true
         
-        connectionScope.launch {
+        return BluetoothConnectionManager.connectionScope?.launch {
             setupGattServer()
             delay(300) // Brief delay to ensure GATT server is ready
             startAdvertising()
         }
-        
-        return true
     }
     
     /**
@@ -115,7 +112,7 @@ class BluetoothGattServerManager(
 
         isActive = false
 
-        connectionScope.launch {
+        BluetoothConnectionManager.connectionScope?.launch {
             stopAdvertising()
             
             // Try to cancel any active connections explicitly before closing
@@ -129,7 +126,7 @@ class BluetoothGattServerManager(
             // Close GATT server
             gattServer?.close()
             gattServer = null
-            
+
             Log.i(TAG, "GATT server stopped")
         }
     }
@@ -174,7 +171,7 @@ class BluetoothGattServerManager(
                         )
                         connectionTracker.addDeviceConnection(device.address, deviceConn)
 
-                        connectionScope.launch {
+                        BluetoothConnectionManager.connectionScope?.launch {
                             delay(1000)
                             if (isActive) { // Check if still active
                                 delegate?.onDeviceConnected(device)
@@ -258,7 +255,7 @@ class BluetoothGattServerManager(
                     connectionTracker.addSubscribedDevice(device)
 
                     Log.d(TAG, "Server: Connection setup complete for ${device.address}")
-                    connectionScope.launch {
+                    BluetoothConnectionManager.connectionScope?.launch {
                         delay(100)
                         if (isActive) { // Check if still active
                             delegate?.onDeviceConnected(device)
@@ -408,7 +405,7 @@ class BluetoothGattServerManager(
             return
         }
 
-        connectionScope.launch {
+        BluetoothConnectionManager.connectionScope?.launch {
             stopAdvertising()
             delay(100)
             startAdvertising()

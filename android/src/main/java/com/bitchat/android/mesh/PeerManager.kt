@@ -86,7 +86,7 @@ class PeerManager {
     var delegate: PeerManagerDelegate? = null
     
     // Coroutines
-    private val managerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var managerScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     init {
         startPeriodicCleanup()
@@ -412,7 +412,8 @@ class PeerManager {
      * Start periodic cleanup of stale peers
      */
     private fun startPeriodicCleanup() {
-        managerScope.launch {
+        managerScope = managerScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
+        managerScope?.launch {
             while (isActive) {
                 delay(CLEANUP_INTERVAL)
                 cleanupStalePeers()
@@ -521,7 +522,8 @@ class PeerManager {
      * Shutdown the manager
      */
     fun shutdown() {
-        managerScope.cancel()
+        managerScope?.cancel()
+        managerScope = null
         clearAllPeers()
     }
 }

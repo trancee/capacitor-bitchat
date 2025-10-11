@@ -1,6 +1,7 @@
 package com.bitchat.android.sync
 
 import android.util.Log
+import com.bitchat.android.mesh.BluetoothMeshService
 import com.bitchat.android.mesh.BluetoothPacketBroadcaster
 import com.bitchat.android.model.RequestSyncPacket
 import com.bitchat.android.protocol.BitchatPacket
@@ -16,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class GossipSyncManager(
     private val myPeerID: String,
-    private val scope: CoroutineScope,
     private val configProvider: ConfigProvider
 ) {
     interface Delegate {
@@ -48,7 +48,7 @@ class GossipSyncManager(
     private var periodicJob: Job? = null
     fun start() {
         periodicJob?.cancel()
-        periodicJob = scope.launch(Dispatchers.IO) {
+        periodicJob = BluetoothMeshService.serviceScope?.launch(Dispatchers.IO) {
             while (isActive) {
                 try {
                     delay(30_000)
@@ -64,14 +64,14 @@ class GossipSyncManager(
     }
 
     fun scheduleInitialSync(delayMs: Long = 5_000L) {
-        scope.launch(Dispatchers.IO) {
+        BluetoothMeshService.serviceScope?.launch(Dispatchers.IO) {
             delay(delayMs)
             sendRequestSync()
         }
     }
 
     fun scheduleInitialSyncToPeer(peerID: String, delayMs: Long = 5_000L) {
-        scope.launch(Dispatchers.IO) {
+        BluetoothMeshService.serviceScope?.launch(Dispatchers.IO) {
             delay(delayMs)
             sendRequestSyncToPeer(peerID)
         }

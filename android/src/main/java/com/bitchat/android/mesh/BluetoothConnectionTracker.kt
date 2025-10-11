@@ -5,7 +5,6 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCharacteristic
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -15,7 +14,6 @@ import java.util.concurrent.CopyOnWriteArrayList
  * Tracks all Bluetooth connections and handles cleanup
  */
 class BluetoothConnectionTracker(
-    private val connectionScope: CoroutineScope,
     private val powerManager: PowerManager
 ) {
     
@@ -294,8 +292,8 @@ class BluetoothConnectionTracker(
         connectedDevices.values.forEach { deviceConn ->
             deviceConn.gatt?.disconnect()
         }
-        
-        connectionScope.launch {
+
+        BluetoothConnectionManager.connectionScope?.launch {
             delay(CLEANUP_DELAY)
             
             connectedDevices.values.forEach { deviceConn ->
@@ -323,7 +321,7 @@ class BluetoothConnectionTracker(
      * Start periodic cleanup of expired connections
      */
     private fun startPeriodicCleanup() {
-        connectionScope.launch {
+        BluetoothConnectionManager.connectionScope?.launch {
             while (isActive) {
                 delay(CLEANUP_INTERVAL)
                 

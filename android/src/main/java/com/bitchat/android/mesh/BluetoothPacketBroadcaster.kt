@@ -40,7 +40,6 @@ import kotlinx.coroutines.channels.actor
  * Reads/writes to the peripheral’s characteristics.
  */
 class BluetoothPacketBroadcaster(
-    private val connectionScope: CoroutineScope,
     private val connectionTracker: BluetoothConnectionTracker,
     private val fragmentManager: FragmentManager?
 ) {
@@ -87,12 +86,12 @@ class BluetoothPacketBroadcaster(
     )
     
     // Actor scope for the broadcaster
-    private val broadcasterScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var broadcasterScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val transferJobs = ConcurrentHashMap<String, Job>()
     
     // SERIALIZATION: Actor to serialize all broadcast operations
     @OptIn(kotlinx.coroutines.ObsoleteCoroutinesApi::class)
-    private val broadcasterActor = broadcasterScope.actor<BroadcastRequest>(
+    private val broadcasterActor = broadcasterScope?.actor<BroadcastRequest>(
         capacity = Channel.UNLIMITED
     ) {
         Log.d(TAG, "🎭 Created packet broadcaster actor")
@@ -136,7 +135,7 @@ class BluetoothPacketBroadcaster(
                 if (transferId != null) {
                     TransferProgressManager.start(transferId, fragments.size)
                 }
-                val job = connectionScope.launch {
+                val job = BluetoothConnectionManager.connectionScope?.launch {
                     var sent = 0
                     fragments.forEach { fragment ->
                         if (!isActive) return@launch
@@ -152,7 +151,7 @@ class BluetoothPacketBroadcaster(
                         }
                     }
                 }
-                if (transferId != null) {
+                if (job != null && transferId != null) {
                     transferJobs[transferId] = job
                     job.invokeOnCompletion { transferJobs.remove(transferId) }
                 }
@@ -250,10 +249,12 @@ class BluetoothPacketBroadcaster(
         gattServer: BluetoothGattServer?,
         characteristic: BluetoothGattCharacteristic?
     ) {
+        broadcasterScope = broadcasterScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
+
         // Submit broadcast request to actor for serialized processing
-        broadcasterScope.launch {
+        broadcasterScope?.launch {
             try {
-                broadcasterActor.send(BroadcastRequest(routed, gattServer, characteristic))
+                broadcasterActor?.send(BroadcastRequest(routed, gattServer, characteristic))
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to send broadcast request to actor: ${e.message}")
                 // Fallback to direct processing if actor fails
@@ -375,7 +376,7 @@ class BluetoothPacketBroadcaster(
             } ?: false
         } catch (e: Exception) {
             Log.w(TAG, "Error sending to server connection ${device.address}: ${e.message}")
-            connectionScope.launch {
+            BluetoothConnectionManager.connectionScope?.launch {
                 delay(CLEANUP_DELAY)
                 connectionTracker.removeSubscribedDevice(device)
                 connectionTracker.addressPeerMap.remove(device.address)
@@ -400,7 +401,7 @@ class BluetoothPacketBroadcaster(
             } ?: false
         } catch (e: Exception) {
             Log.w(TAG, "Error sending to client connection ${deviceConn.device.address}: ${e.message}")
-            connectionScope.launch {
+            BluetoothConnectionManager.connectionScope?.launch {
                 delay(CLEANUP_DELAY)
                 connectionTracker.cleanupDeviceConnection(deviceConn.device.address)
             }
@@ -414,9 +415,9 @@ class BluetoothPacketBroadcaster(
     fun getDebugInfo(): String {
         return buildString {
             appendLine("=== Packet Broadcaster Debug Info ===")
-            appendLine("Broadcaster Scope Active: ${broadcasterScope.isActive}")
-            appendLine("Actor Channel Closed: ${broadcasterActor.isClosedForSend}")
-            appendLine("Connection Scope Active: ${connectionScope.isActive}")
+            appendLine("Broadcaster Scope Active: ${broadcasterScope?.isActive}")
+            appendLine("Actor Channel Closed: ${broadcasterActor?.isClosedForSend}")
+            appendLine("Connection Scope Active: ${BluetoothConnectionManager.connectionScope?.isActive}")
         }
     }
     
@@ -427,10 +428,11 @@ class BluetoothPacketBroadcaster(
         Log.d(TAG, "Shutting down BluetoothPacketBroadcaster actor")
         
         // Close the actor gracefully
-        broadcasterActor.close()
+        broadcasterActor?.close()
         
         // Cancel the broadcaster scope
-        broadcasterScope.cancel()
+        broadcasterScope?.cancel()
+        broadcasterScope = null
         
         Log.d(TAG, "BluetoothPacketBroadcaster shutdown complete")
     }

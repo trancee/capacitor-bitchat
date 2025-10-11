@@ -21,6 +21,10 @@ class BluetoothConnectionManager(
     
     companion object {
         private const val TAG = "BluetoothConnectionManager"
+
+        // Coroutines
+        @JvmStatic
+        var connectionScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     }
     
     // Core Bluetooth components
@@ -31,13 +35,10 @@ class BluetoothConnectionManager(
     // Power management
     private val powerManager = PowerManager(context.applicationContext)
     
-    // Coroutines
-    private val connectionScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
     // Component managers
     private val permissionManager = BluetoothPermissionManager(context)
-    private val connectionTracker = BluetoothConnectionTracker(connectionScope, powerManager)
-    private val packetBroadcaster = BluetoothPacketBroadcaster(connectionScope, connectionTracker, fragmentManager)
+    private val connectionTracker = BluetoothConnectionTracker(powerManager)
+    private val packetBroadcaster = BluetoothPacketBroadcaster(connectionTracker, fragmentManager)
     
     // Delegate for component managers to call back to main manager
     private val componentDelegate = object : BluetoothConnectionManagerDelegate {
@@ -70,10 +71,10 @@ class BluetoothConnectionManager(
     }
     
     private val serverManager = BluetoothGattServerManager(
-        context, connectionScope, connectionTracker, permissionManager, powerManager, componentDelegate
+        context, connectionTracker, permissionManager, powerManager, componentDelegate
     )
     private val clientManager = BluetoothGattClientManager(
-        context, connectionScope, connectionTracker, permissionManager, powerManager, componentDelegate
+        context, connectionTracker, permissionManager, powerManager, componentDelegate
     )
     
     // Service state
@@ -92,17 +93,17 @@ class BluetoothConnectionManager(
     /**
      * Start all Bluetooth services with power optimization
      */
-    fun startServices(): Boolean {
+    fun startServices(): Job? {
         Log.i(TAG, "Starting power-optimized Bluetooth services...")
         
         if (!permissionManager.hasBluetoothPermissions()) {
             Log.e(TAG, "Missing Bluetooth permissions")
-            return false
+            throw Exception("Missing Bluetooth permissions")
         }
         
         if (bluetoothAdapter?.isEnabled != true) {
             Log.e(TAG, "Bluetooth is not enabled")
-            return false
+            throw Exception("Bluetooth is not enabled")
         }
         
         try {
@@ -118,48 +119,62 @@ class BluetoothConnectionManager(
         //     Log.e(TAG, "Missing BLUETOOTH_CONNECT permission to set adapter name.", se)
         // }
 
+            connectionScope = connectionScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob())
+
             // Start all component managers
-            connectionScope.launch {
-                // Start connection tracker first
-                connectionTracker.start()
-                
-                // Start power manager
-                powerManager.start()
+            return connectionScope?.launch {
+                runBlocking {
+                    // Start connection tracker first
+                    connectionTracker.start()
 
-                // Start server/client based on debug settings
-                //val dbg = try { com.bitchat.android.ui.debug.DebugSettingsManager.getInstance() } catch (_: Exception) { null }
-                val startServer = true//dbg?.gattServerEnabled?.value != false
-                val startClient = true//dbg?.gattClientEnabled?.value != false
+                    // Start power manager
+                    powerManager.start()
 
-                if (startServer) {
-                    if (!serverManager.start()) {
-                        Log.e(TAG, "Failed to start server manager")
-                        this@BluetoothConnectionManager.isActive = false
-                        return@launch
+                    // Start server/client based on debug settings
+                    //val dbg = try { com.bitchat.android.ui.debug.DebugSettingsManager.getInstance() } catch (_: Exception) { null }
+                    val startServer = true//dbg?.gattServerEnabled?.value != false
+                    val startClient = true//dbg?.gattClientEnabled?.value != false
+
+                    if (startServer) {
+                        val job = serverManager.start()
+                        if (job == null) {
+                            Log.d(TAG, "GATT client already active; start is a no-op")
+                        } else {
+                            job.invokeOnCompletion { cause ->
+                                if (cause != null) {
+                                    Log.e(TAG, "Failed to start server manager: ${cause.message}")
+                                    this@BluetoothConnectionManager.isActive = false
+                                }
+                            }
+                            job.join()
+                        }
+                    } else {
+                        Log.i(TAG, "GATT Server disabled by debug settings; not starting")
                     }
-                } else {
-                    Log.i(TAG, "GATT Server disabled by debug settings; not starting")
-                }
 
-                if (startClient) {
-                    if (!clientManager.start()) {
-                        Log.e(TAG, "Failed to start client manager")
-                        this@BluetoothConnectionManager.isActive = false
-                        return@launch
+                    if (startClient) {
+                        val job = clientManager.start()
+                        if (job == null) {
+                            Log.d(TAG, "GATT server already active; start is a no-op")
+                        } else {
+                            job.invokeOnCompletion { cause ->
+                                if (cause != null) {
+                                    Log.e(TAG, "Failed to start client manager: ${cause.message}")
+                                    this@BluetoothConnectionManager.isActive = false
+                                }
+                            }
+                            job.join()
+                        }
+                    } else {
+                        Log.i(TAG, "GATT Client disabled by debug settings; not starting")
                     }
-                } else {
-                    Log.i(TAG, "GATT Client disabled by debug settings; not starting")
                 }
-                
                 Log.i(TAG, "Bluetooth services started successfully")
             }
-            
-            return true
-            
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start Bluetooth services: ${e.message}")
             isActive = false
-            return false
+            return null
         }
     }
     
@@ -171,20 +186,23 @@ class BluetoothConnectionManager(
         
         isActive = false
         
-        connectionScope.launch {
-            // Stop component managers
-            clientManager.stop()
-            serverManager.stop()
-            
-            // Stop power manager
-            powerManager.stop()
-            
-            // Stop connection tracker
-            connectionTracker.stop()
-            
+        connectionScope?.launch {
+            runBlocking {
+                // Stop component managers
+                clientManager.stop()
+                serverManager.stop()
+
+                // Stop power manager
+                powerManager.stop()
+
+                // Stop connection tracker
+                connectionTracker.stop()
+            }
+
             // Cancel the coroutine scope
-            connectionScope.cancel()
-            
+            connectionScope?.cancel()
+            connectionScope = null
+
             Log.i(TAG, "All Bluetooth services stopped")
         }
     }
@@ -229,10 +247,10 @@ class BluetoothConnectionManager(
     
 
     // Expose role controls for debug UI
-    fun startServer() { connectionScope.launch { serverManager.start() } }
-    fun stopServer() { connectionScope.launch { serverManager.stop() } }
-    fun startClient() { connectionScope.launch { clientManager.start() } }
-    fun stopClient() { connectionScope.launch { clientManager.stop() } }
+    fun startServer() { connectionScope?.launch { serverManager.start() } }
+    fun stopServer() { connectionScope?.launch { serverManager.stop() } }
+    fun startClient() { connectionScope?.launch { clientManager.start() } }
+    fun stopClient() { connectionScope?.launch { clientManager.stop() } }
 
     // Inject nickname resolver for broadcaster logs
     fun setNicknameResolver(resolver: (String) -> String?) { packetBroadcaster.setNicknameResolver(resolver) }
@@ -265,7 +283,7 @@ class BluetoothConnectionManager(
 
     // Optionally disconnect all connections (server and client)
     fun disconnectAll() {
-        connectionScope.launch {
+        connectionScope?.launch {
             // Stop and restart to force disconnects
             clientManager.stop()
             serverManager.stop()
@@ -307,7 +325,7 @@ class BluetoothConnectionManager(
     override fun onPowerModeChanged(newMode: PowerManager.PowerMode) {
         Log.i(TAG, "Power mode changed to: $newMode")
         
-        connectionScope.launch {
+        connectionScope?.launch {
             // Avoid rapid scan restarts by checking if we need to change scan behavior
             val wasUsingDutyCycle = powerManager.shouldUseDutyCycle()
             

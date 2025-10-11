@@ -28,7 +28,7 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
     var packetProcessor: PacketProcessor? = null
     
     // Coroutines
-    private val handlerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var handlerScope: CoroutineScope? = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     /**
      * Handle Noise encrypted transport message - SIMPLIFIED iOS-compatible version
@@ -480,7 +480,7 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
     fun getDebugInfo(): String {
         return buildString {
             appendLine("=== Message Handler Debug Info ===")
-            appendLine("Handler Scope Active: ${handlerScope.isActive}")
+            appendLine("Handler Scope Active: ${handlerScope?.isActive}")
             appendLine("My Peer ID: $myPeerID")
         }
     }
@@ -510,7 +510,8 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
      * Shutdown the handler
      */
     fun shutdown() {
-        handlerScope.cancel()
+        handlerScope?.cancel()
+        handlerScope = null
     }
 
     /**
