@@ -149,7 +149,7 @@ class BluetoothGattServerManager(
      */
     @SuppressLint("MissingPermission")
     @Suppress("DEPRECATION")
-    private fun setupGattServer() {
+    private suspend fun setupGattServer() {
         if (!permissionManager.hasBluetoothPermissions()) return
         
         val serverCallback = object : BluetoothGattServerCallback() {
@@ -283,7 +283,7 @@ class BluetoothGattServerManager(
         }
         
         // Small delay to ensure cleanup is complete
-        Thread.sleep(100)
+        delay(100)
         
         if (!isActive) {
             Log.d(TAG, "Service inactive, skipping GATT server creation")

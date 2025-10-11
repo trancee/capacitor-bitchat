@@ -48,7 +48,7 @@ class BluetoothMeshService(private val context: Context) {
     private val messageHandler = MessageHandler(myPeerID, context.applicationContext)
     internal val connectionManager = BluetoothConnectionManager(context, myPeerID, fragmentManager) // Made internal for access
     private val packetProcessor = PacketProcessor(myPeerID)
-    private lateinit var gossipSyncManager: GossipSyncManager
+    private var gossipSyncManager: GossipSyncManager
     
     // Service state management
     private var isActive = false
@@ -160,7 +160,6 @@ class BluetoothMeshService(private val context: Context) {
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to remove Noise session for $peerID: ${e.message}")
                 }
-                delegate?.onLost(peerID) // trancee
             }
         }
         
@@ -390,9 +389,9 @@ class BluetoothMeshService(private val context: Context) {
             override fun getBroadcastRecipient(): ByteArray {
                 return SpecialRecipients.BROADCAST
             }
-            
-            override fun handleNoiseHandshake(routed: RoutedPacket): Boolean {
-                return runBlocking { securityManager.handleNoiseHandshake(routed) }
+
+            override suspend fun handleNoiseHandshake(routed: RoutedPacket): Boolean {
+                return securityManager.handleNoiseHandshake(routed)
             }
             
             override fun handleNoiseEncrypted(routed: RoutedPacket) {
@@ -552,8 +551,6 @@ class BluetoothMeshService(private val context: Context) {
         if (connectionManager.startServices()) {
             isActive = true
 
-            delegate?.onStarted(myPeerID, true) // trancee
-
             // Start periodic announcements for peer discovery and connectivity
             sendPeriodicBroadcastAnnounce()
             Log.d(TAG, "Started periodic broadcast announcements (every 30 seconds)")
@@ -561,9 +558,9 @@ class BluetoothMeshService(private val context: Context) {
             gossipSyncManager.start()
         } else {
             Log.e(TAG, "Failed to start Bluetooth services")
-
-            delegate?.onStarted(myPeerID, false) // trancee
         }
+
+        delegate?.onStarted(myPeerID, isActive) // trancee
     }
     
     /**
