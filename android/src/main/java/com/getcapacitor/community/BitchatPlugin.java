@@ -26,7 +26,7 @@ import com.getcapacitor.community.classes.events.StartedEvent;
 import com.getcapacitor.community.classes.events.StoppedEvent;
 import com.getcapacitor.community.classes.options.EstablishOptions;
 import com.getcapacitor.community.classes.options.InitializeOptions;
-import com.getcapacitor.community.classes.options.IsEstablishOptions;
+import com.getcapacitor.community.classes.options.IsEstablishedOptions;
 import com.getcapacitor.community.classes.options.SendOptions;
 import com.getcapacitor.community.classes.options.StartOptions;
 import com.getcapacitor.community.interfaces.Callback;
@@ -190,7 +190,7 @@ public class BitchatPlugin extends Plugin {
         Callback callback = new Callback(call) {};
 
         try {
-            IsEstablishOptions options = new IsEstablishOptions(call);
+            IsEstablishedOptions options = new IsEstablishedOptions(call);
 
             implementation.isEstablished(options, callback);
         } catch (Exception exception) {

@@ -13,7 +13,7 @@ import com.bitchat.android.onboarding.BatteryOptimizationManager;
 import com.bitchat.android.onboarding.PermissionManager;
 import com.getcapacitor.community.classes.options.EstablishOptions;
 import com.getcapacitor.community.classes.options.InitializeOptions;
-import com.getcapacitor.community.classes.options.IsEstablishOptions;
+import com.getcapacitor.community.classes.options.IsEstablishedOptions;
 import com.getcapacitor.community.classes.options.SendOptions;
 import com.getcapacitor.community.classes.options.StartOptions;
 import com.getcapacitor.community.classes.results.EstablishResult;
