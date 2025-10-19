@@ -22,6 +22,15 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>bitchat uses Bluetooth to create a secure mesh network for chatting with nearby users.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>bitchat uses Bluetooth to discover and connect with other bitchat users nearby.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>bluetooth-peripheral</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
