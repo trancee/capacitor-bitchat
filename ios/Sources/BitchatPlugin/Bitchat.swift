@@ -43,7 +43,7 @@ import CoreBluetooth
 
         do {
             isInitialized = true
-            
+
             let peerID = meshService.myPeerID.id
 
             let result = InitializeResult(peerID)
@@ -122,7 +122,7 @@ import CoreBluetooth
             }
 
             let isEstablished = meshService.hasEstablishedSession(with: PeerID(str: peerID))
-            
+
             let result = EstablishResult(isEstablished)
             completion(result, nil)
         } catch {
@@ -136,7 +136,7 @@ import CoreBluetooth
         }
 
         let isEstablished = meshService.hasEstablishedSession(with: PeerID(str: peerID))
-        
+
         let result = IsEstablishedResult(isEstablished)
         completion(result, nil)
     }
@@ -156,7 +156,7 @@ import CoreBluetooth
         guard let message = options.getMessage() else {
             return completion(nil, CustomError.payloadMissing)
         }
-        
+
         do {
             let messageID = UUID()
 
@@ -187,14 +187,14 @@ import CoreBluetooth
         } else {
             SecureLogger.debug("📥 handlePublicMessage called for message from \(message.sender)", category: .session)
         }
-        
+
         let messageID = message.id
         let content = message.content
         let peerID = message.sender
-        
+
         let isPrivate = message.isPrivate
         let isRelay = message.isRelay
-        
+
         plugin.onReceivedEvent(messageID: Helper.makeUUID(messageID), content, peerID: peerID, isPrivate: isPrivate, isRelay: isRelay)
     }
 
@@ -229,63 +229,63 @@ import CoreBluetooth
 
         plugin.onStartedEvent(peerID, isStarted: success)
     }
-    
+
     func onStopped() {
         isStarted = false
 
         plugin.onStoppedEvent()
     }
-    
+
     func onFound(_ peerID: PeerID, nickname: String) {
         let peerID = peerID.id
 
         plugin.onFoundEvent(peerID, message: nickname)
     }
-    
+
     func onLost(_ peerID: PeerID) {
         let peerID = peerID.id
 
         plugin.onLostEvent(peerID)
     }
-    
+
     func onConnected(_ peerID: PeerID) {
         let peerID = peerID.id
 
         plugin.onConnectedEvent(peerID)
     }
-    
+
     func onDisconnected(_ peerID: PeerID) {
         let peerID = peerID.id
 
         plugin.onDisconnectedEvent(peerID)
     }
-    
+
     func onEstablished(_ peerID: PeerID) {
         let peerID = peerID.id
 
         plugin.onEstablishedEvent(peerID)
     }
-    
+
     func onSent(_ messageID: String, peerID: PeerID?) {
         guard let messageID = Helper.makeUUID(messageID) else { return }
 
         let peerID = peerID!.id
 
-        plugin.onSentEvent(messageID, peerID: peerID);
+        plugin.onSentEvent(messageID, peerID: peerID)
     }
-    
+
     func onRSSIUpdated(_ peerID: PeerID, rssi: Int) {
         let peerID = peerID.id
 
         plugin.onRSSIUpdatedEvent(peerID, rssi)
     }
-    
+
     func onPeerInfoUpdated(_ peerID: PeerID, nickname: String, isVerified: Bool) {
     }
-    
+
     func onPeerIDChanged(_ peerID: PeerID, oldPeerID: String?, nickname: String) {
     }
-    
+
     /**
      * Permissions
      */

@@ -14,7 +14,7 @@ public class BitchatHelper {
         guard var value = value, !value.isEmpty else {
             return nil
         }
-        
+
         if value.count == 32 {
             value = value.uppercased()
             value = value[0..<8] + "-" + value[8..<12] + "-" + value[12..<16] + "-" + value[16..<20] + "-" + value[20..<32]

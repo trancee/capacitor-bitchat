@@ -422,7 +422,7 @@ final class BLEService: NSObject {
             self?.sendAnnounce(forceSend: true)
         }
 
-        self.delegate?.onStarted(myPeerID, success: centralManager?.state == .poweredOn)
+        self.delegate?.onStarted(myPeerID, success: true)
     }
     
     func stopServices() {
@@ -699,6 +699,8 @@ extension BLEService: CBCentralManagerDelegate {
         // Notify delegate about state change on main thread
         Task { @MainActor in
             self.delegate?.didUpdateBluetoothState(central.state)
+
+            self.delegate?.onStarted(myPeerID, success: central.state == .poweredOn) // trancee
         }
 
         if central.state == .poweredOn {
