@@ -291,7 +291,7 @@ public class Bitchat {
         callback.success(result);
     }
 
-    public void isEstablished(@NonNull IsEstablishOptions options, @NonNull Callback callback) {
+    public void isEstablished(@NonNull IsEstablishedOptions options, @NonNull Callback callback) {
         @Nullable
         String peerID = options.getPeerID();
 

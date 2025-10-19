@@ -6,11 +6,11 @@
 // This is free and unencumbered software released into the public domain.
 //
 
-import BitLogger
 import Foundation
 import SwiftUI
 
 /// Manages all private chat functionality
+@available(iOS 15, *)
 final class PrivateChatManager: ObservableObject {
     @Published var privateChats: [String: [BitchatMessage]] = [:]
     @Published var selectedPeer: String? = nil

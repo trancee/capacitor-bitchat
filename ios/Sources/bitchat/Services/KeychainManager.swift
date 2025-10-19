@@ -6,7 +6,6 @@
 // For more information, see <https://unlicense.org>
 //
 
-import BitLogger
 import Foundation
 import Security
 
@@ -24,8 +23,8 @@ protocol KeychainManagerProtocol {
 
 final class KeychainManager: KeychainManagerProtocol {
     // Use consistent service name for all keychain items
-    private let service = BitchatApp.bundleID
-    private let appGroup = "group.\(BitchatApp.bundleID)"
+    private let service = "bitchat"//BitchatApp.bundleID
+    private let appGroup = "group.bitchat"
     
     private func isSandboxed() -> Bool {
         #if os(macOS)

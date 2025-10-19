@@ -1,4 +1,3 @@
-import BitLogger
 import Foundation
 import Combine
 
@@ -196,10 +195,10 @@ final class FavoritesPersistenceService: ObservableObject {
         saveFavorites()
         
         // Delete from keychain directly
-        KeychainHelper.delete(
-            key: Self.storageKey,
-            service: Self.keychainService
-        )
+//        KeychainHelper.delete(
+//            key: Self.storageKey,
+//            service: Self.keychainService
+//        )
         
         // Post notification for UI update
         NotificationCenter.default.post(name: .favoriteStatusChanged, object: nil)
@@ -216,11 +215,11 @@ final class FavoritesPersistenceService: ObservableObject {
             let data = try encoder.encode(relationships)
             
             // Store in keychain for security
-            KeychainHelper.save(
-                key: Self.storageKey,
-                data: data,
-                service: Self.keychainService
-            )
+//            KeychainHelper.save(
+//                key: Self.storageKey,
+//                data: data,
+//                service: Self.keychainService
+//            )
             
             // Successfully saved favorites
         } catch {
@@ -231,13 +230,14 @@ final class FavoritesPersistenceService: ObservableObject {
     private func loadFavorites() {
         // Loading favorites from keychain
         
-        guard let data = KeychainHelper.load(
-            key: Self.storageKey,
-            service: Self.keychainService
-        ) else { 
-            return 
-        }
+//        guard let data = KeychainHelper.load(
+//            key: Self.storageKey,
+//            service: Self.keychainService
+//        ) else { 
+//            return 
+//        }
         
+        /*
         do {
             let decoder = JSONDecoder()
             let relationships = try decoder.decode([FavoriteRelationship].self, from: data)
@@ -301,6 +301,7 @@ final class FavoritesPersistenceService: ObservableObject {
         } catch {
             SecureLogger.error("Failed to load favorites: \(error)", category: .session)
         }
+        */
     }
 }
 

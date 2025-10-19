@@ -3,12 +3,12 @@ package com.getcapacitor.community.classes.options;
 import androidx.annotation.Nullable;
 import com.getcapacitor.PluginCall;
 
-public class IsEstablishOptions {
+public class IsEstablishedOptions {
 
     @Nullable
     private String peerID;
 
-    public IsEstablishOptions(PluginCall call) {
+    public IsEstablishedOptions(PluginCall call) {
         @Nullable
         String peerID = call.getString("peerID");
         this.setPeerID(peerID);

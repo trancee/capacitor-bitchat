@@ -21,6 +21,7 @@ enum GeohashChannelLevel: CaseIterable, Codable, Equatable {
     }
     }
 
+    @available(iOS 15, *)
     var displayName: String {
         switch self {
         case .building:
@@ -89,6 +90,7 @@ struct GeohashChannel: Codable, Equatable, Hashable, Identifiable {
 
     var id: String { "\(level)-\(geohash)" }
 
+    @available(iOS 15, *)
     var displayName: String {
         "\(level.displayName) • \(geohash)"
     }
@@ -100,6 +102,7 @@ enum ChannelID: Equatable, Codable {
     case location(GeohashChannel)
 
     /// Human readable name for UI.
+    @available(iOS 15, *)
     var displayName: String {
         switch self {
         case .mesh:

@@ -6,7 +6,6 @@
 //  This is free and unencumbered software released into the public domain.
 //
 
-import BitLogger
 import Foundation
 import Combine
 import SwiftUI
@@ -280,20 +279,6 @@ final class UnifiedPeerService: ObservableObject, TransportPeerEventsDelegate {
         if wasFavorite {
             // Remove favorite
             favoritesService.removeFavorite(peerNoisePublicKey: peer.noisePublicKey)
-        } else {
-            // Get or derive peer's Nostr public key if not already known
-            var peerNostrKey = peer.nostrPublicKey
-            if peerNostrKey == nil {
-                // Try to get from NostrIdentityBridge association
-                peerNostrKey = NostrIdentityBridge.getNostrPublicKey(for: peer.noisePublicKey)
-            }
-            
-            // Add favorite
-            favoritesService.addFavorite(
-                peerNoisePublicKey: peer.noisePublicKey,
-                peerNostrPublicKey: peerNostrKey,
-                peerNickname: finalNickname
-            )
         }
         
         // Log the final nickname being saved

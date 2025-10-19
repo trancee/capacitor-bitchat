@@ -161,6 +161,7 @@ enum DeliveryStatus: Codable, Equatable, Hashable {
 // MARK: - Delegate Protocol
 
 protocol BitchatDelegate: AnyObject {
+    @available(iOS 15, *)
     func didReceiveMessage(_ message: BitchatMessage)
     func didConnectToPeer(_ peerID: PeerID)
     func didDisconnectFromPeer(_ peerID: PeerID)
@@ -177,6 +178,20 @@ protocol BitchatDelegate: AnyObject {
     // Bluetooth state updates for user notifications
     func didUpdateBluetoothState(_ state: CBManagerState)
     func didReceivePublicMessage(from peerID: PeerID, nickname: String, content: String, timestamp: Date)
+    
+    // trancee
+    func onStarted(_ peerID: PeerID, success: Bool?)
+    func onStopped()
+    func onFound(_ peerID: PeerID, nickname: String)
+    func onLost(_ peerID: PeerID)
+    func onConnected(_ peerID: PeerID)
+    func onDisconnected(_ peerID: PeerID)
+    func onEstablished(_ peerID: PeerID)
+    func onSent(_ messageID: String, peerID: PeerID?)
+    func onRSSIUpdated(_ peerID: PeerID, rssi: Int)
+    func onPeerInfoUpdated(_ peerID: PeerID, nickname: String, isVerified: Bool)
+    func onPeerIDChanged(_ peerID: PeerID, oldPeerID: String?, nickname: String)
+    // trancee
 }
 
 // Provide default implementation to make it effectively optional

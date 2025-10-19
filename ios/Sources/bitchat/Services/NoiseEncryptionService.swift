@@ -82,7 +82,6 @@
 /// - Background queue for CPU-intensive operations
 ///
 
-import BitLogger
 import Foundation
 import CryptoKit
 
@@ -112,6 +111,7 @@ enum EncryptionStatus: Equatable {
         }
     }
     
+    @available(iOS 15, *)
     var description: String {
         switch self {
         case .none:
@@ -127,6 +127,7 @@ enum EncryptionStatus: Equatable {
         }
     }
 
+    @available(iOS 15, *)
     var accessibilityDescription: String {
         switch self {
         case .none:

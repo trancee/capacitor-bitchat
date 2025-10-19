@@ -12,6 +12,7 @@ import Foundation
 /// Handles both broadcast messages and private encrypted messages,
 /// with support for mentions, replies, and delivery tracking.
 /// - Note: This is the primary data model for chat messages
+@available(iOS 15, *)
 final class BitchatMessage: Codable {
     let id: String
     let sender: String
@@ -71,6 +72,7 @@ final class BitchatMessage: Codable {
 
 // MARK: - Equatable Conformance
 
+@available(iOS 15, *)
 extension BitchatMessage: Equatable {
     static func == (lhs: BitchatMessage, rhs: BitchatMessage) -> Bool {
         return lhs.id == rhs.id &&
@@ -89,6 +91,7 @@ extension BitchatMessage: Equatable {
 
 // MARK: - Binary encoding
 
+@available(iOS 15, *)
 extension BitchatMessage {
     func toBinaryPayload() -> Data? {
         var data = Data()
@@ -322,6 +325,7 @@ extension BitchatMessage {
 
 // MARK: - Helpers
 
+@available(iOS 15, *)
 extension BitchatMessage {
     
     private static let timestampFormatter: DateFormatter = {
@@ -335,6 +339,7 @@ extension BitchatMessage {
     }
 }
 
+@available(iOS 15, *)
 extension Array where Element == BitchatMessage {
     /// Filters out empty ones and deduplicate by ID while preserving order (from oldest to newest)
     func cleanedAndDeduped() -> [Element] {

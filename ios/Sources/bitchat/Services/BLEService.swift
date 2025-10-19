@@ -1,4 +1,3 @@
-import BitLogger
 import Foundation
 import CoreBluetooth
 import Combine
@@ -36,6 +35,7 @@ final class BLEService: NSObject {
     private struct PeripheralState {
         let peripheral: CBPeripheral
         var characteristic: CBCharacteristic?
+        var rssi: Int?
         var peerID: PeerID?
         var isConnecting: Bool = false
         var isConnected: Bool = false
@@ -77,6 +77,7 @@ final class BLEService: NSObject {
     // Simple announce throttling
     private var lastAnnounceSent = Date.distantPast
     private let announceMinInterval: TimeInterval = TransportConfig.bleAnnounceMinInterval
+    public var announceInterval: TimeInterval = TransportConfig.bleAnnounceIntervalSeconds // trancee
     
     // Application state tracking (thread-safe)
     #if os(iOS)
@@ -420,6 +421,8 @@ final class BLEService: NSObject {
         messageQueue.asyncAfter(deadline: .now() + TransportConfig.bleInitialAnnounceDelaySeconds) { [weak self] in
             self?.sendAnnounce(forceSend: true)
         }
+
+        self.delegate?.onStarted(myPeerID, success: centralManager?.state == .poweredOn)
     }
     
     func stopServices() {
@@ -470,6 +473,8 @@ final class BLEService: NSObject {
         for state in peripherals.values {
             centralManager?.cancelPeripheralConnection(state.peripheral)
         }
+        
+        self.delegate?.onStopped()
     }
     
     func emergencyDisconnectAll() {
@@ -539,6 +544,13 @@ final class BLEService: NSObject {
         }
     }
     
+    // trancee
+    /// Check if we have an established session with a peer
+    func hasEstablishedSession(with peerID: PeerID) -> Bool {
+        return noiseService.hasEstablishedSession(with: peerID)
+    }
+    // trancee
+
     func getNoiseSessionState(for peerID: PeerID) -> LazyHandshakeState {
         if noiseService.hasEstablishedSession(with: peerID) {
             return .established
@@ -611,12 +623,6 @@ final class BLEService: NSObject {
         
         // Include Nostr public key in the notification
         var content = isFavorite ? "[FAVORITED]" : "[UNFAVORITED]"
-        
-        // Add our Nostr public key if available
-        if let myNostrIdentity = try? NostrIdentityBridge.getCurrentNostrIdentity() {
-            content += ":" + myNostrIdentity.npub
-            SecureLogger.debug("📝 Sending favorite notification with Nostr npub: \(myNostrIdentity.npub)", category: .session)
-        }
         
         SecureLogger.debug("📤 Sending favorite notification to \(peerID): \(content)", category: .session)
         sendPrivateMessage(content, to: peerID.id, messageID: UUID().uuidString)
@@ -778,7 +784,12 @@ extension BLEService: CBCentralManagerDelegate {
         }
 
         // Check if we already have this peripheral
-        if let state = peripherals[peripheralID] {
+        if var state = peripherals[peripheralID] {
+            // trancee
+            state.rssi = rssiValue
+            peripherals[peripheralID] = state
+            // trancee
+
             if state.isConnected || state.isConnecting {
                 return // Already connected or connecting
             }
@@ -812,6 +823,7 @@ extension BLEService: CBCentralManagerDelegate {
         peripherals[peripheralID] = PeripheralState(
             peripheral: peripheral,
             characteristic: nil,
+            rssi: rssiValue,
             peerID: nil,
             isConnecting: true,
             isConnected: false,
@@ -930,6 +942,8 @@ func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeriph
             
             if let peerID {
                 self.notifyPeerDisconnectedDebounced(peerID)
+
+                self.delegate?.onDisconnected(peerID) // trancee
             }
             self.requestPeerDataPublish()
             self.delegate?.didUpdatePeerList(currentPeerIDs)
@@ -1111,6 +1125,17 @@ extension BLEService: CBPeripheralDelegate {
         if var state = peripherals[peripheralID] {
             state.characteristic = characteristic
             peripherals[peripheralID] = state
+            
+            // trancee
+            if let peerID = state.peerID {
+                // Update UI immediately
+                notifyUI { [weak self] in
+                    guard let self = self else { return }
+                    
+                    self.delegate?.onConnected(peerID) // trancee
+                }
+            }
+            // trancee
         }
         
         // Subscribe for notifications
@@ -1144,6 +1169,40 @@ extension BLEService: CBPeripheralDelegate {
 
         bufferNotificationChunk(data, from: peripheral)
     }
+
+    // trancee
+    func peripheral(_ peripheral: CBPeripheral, didReadRSSI value: NSNumber, error: Error?) {
+        if let error = error {
+            SecureLogger.error("❌ Error reading RSSI: \(error.localizedDescription)", category: .session)
+            return
+        }
+        let rssiValue = value.intValue
+
+        SecureLogger.debug("🔍 RSSI from \(peripheral.name ?? "Unknown"): \(rssiValue) dBm", category: .session)
+
+        let peripheralUUID = peripheral.identifier.uuidString
+        var state = peripherals[peripheralUUID] ?? PeripheralState(
+            peripheral: peripheral,
+            characteristic: nil,
+            peerID: nil,
+            isConnecting: false,
+            isConnected: peripheral.state == .connected,
+            lastConnectionAttempt: nil
+        )
+
+        state.rssi = rssiValue
+        peripherals[peripheralUUID] = state
+
+        if let peerID = state.peerID {
+            // Update UI immediately
+            notifyUI { [weak self] in
+                guard let self = self else { return }
+
+                self.delegate?.onRSSIUpdated(peerID, rssi: rssiValue) // trancee
+            }
+        }
+    }
+    // trancee
 
     private func bufferNotificationChunk(_ chunk: Data, from peripheral: CBPeripheral) {
         let peripheralUUID = peripheral.identifier.uuidString
@@ -1209,6 +1268,8 @@ extension BLEService: CBPeripheralDelegate {
             }
             handleReceivedPacket(packet, from: senderID)
         }
+        
+        peripheral.readRSSI() // trancee
     }
     
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -1347,6 +1408,8 @@ extension BLEService: CBPeripheralManagerDelegate {
                 // Publish snapshots so UnifiedPeerService can refresh icons promptly
                 self.requestPeerDataPublish()
                 self.delegate?.didUpdatePeerList(currentPeerIDs)
+
+                self.delegate?.onDisconnected(peerID) // trancee
             }
         }
     }
@@ -1519,6 +1582,7 @@ extension BLEService {
             self?.messageQueue.async { [weak self] in
                 self?.sendAnnounce(forceSend: true)
             }
+            self?.delegate?.onEstablished(peerID) // trancee
         }
     }
 
@@ -1759,6 +1823,8 @@ extension BLEService {
                 // Notify delegate that message was sent
                 notifyUI { [weak self] in
                     self?.delegate?.didUpdateMessageDeliveryStatus(messageID, status: .sent)
+
+                    self?.delegate?.onSent(messageID, peerID: recipientID) // trancee
                 }
             } catch {
                 SecureLogger.error("Failed to encrypt message: \(error)")
@@ -1780,6 +1846,8 @@ extension BLEService {
             // Notify delegate that message is pending
             notifyUI { [weak self] in
                 self?.delegate?.didUpdateMessageDeliveryStatus(messageID, status: .sending)
+
+                //self?.delegate?.onSent(messageID, peerID: recipientID) // trancee
             }
         }
     }
@@ -1850,6 +1918,8 @@ extension BLEService {
                 // Notify delegate that message was sent
                 notifyUI { [weak self] in
                     self?.delegate?.didUpdateMessageDeliveryStatus(messageID, status: .sent)
+
+                    self?.delegate?.onSent(messageID, peerID: peerID) // trancee
                 }
 
                 SecureLogger.debug("✅ Sent pending message \(messageID) to \(peerID) after handshake", category: .session)
@@ -1859,6 +1929,8 @@ extension BLEService {
                 // Notify delegate of failure
                 notifyUI { [weak self] in
                     self?.delegate?.didUpdateMessageDeliveryStatus(messageID, status: .failed(reason: "Encryption failed"))
+
+                    //self?.delegate?.onSent(messageID, peerID: peerID) // trancee
                 }
             }
         }
@@ -2554,6 +2626,8 @@ extension BLEService {
             
             self.requestPeerDataPublish()
             self.delegate?.didUpdatePeerList(currentPeerIDs)
+
+            self.delegate?.onFound(peerID, nickname: announcement.nickname) // trancee
         }
         
         // Track for sync (include our own and others' announces)
@@ -2813,6 +2887,8 @@ extension BLEService {
             
             self.delegate?.didDisconnectFromPeer(peerID)
             self.delegate?.didUpdatePeerList(currentPeerIDs)
+
+            self.delegate?.onLost(peerID) // trancee
         }
     }
     
@@ -2973,7 +3049,7 @@ extension BLEService {
         let elapsed = now.timeIntervalSince(lastAnnounceSent)
         if connectedCount == 0 {
             // Discovery mode: keep frequent announces
-            if elapsed >= TransportConfig.bleAnnounceIntervalSeconds { sendAnnounce(forceSend: true) }
+            if elapsed >= announceInterval { sendAnnounce(forceSend: true) }
         } else {
             // Connected mode: announce less often; much less in dense networks
             let base = connectedCount >= TransportConfig.bleHighDegreeThreshold ?
@@ -3073,6 +3149,8 @@ extension BLEService {
                 
                 for peerID in disconnectedPeers {
                     self.delegate?.didDisconnectFromPeer(PeerID(str: peerID))
+
+                    self.delegate?.onDisconnected(PeerID(str: peerID)) // trancee
                 }
                 // Publish snapshots so UnifiedPeerService updates connection/reachability icons
                 self.requestPeerDataPublish()
