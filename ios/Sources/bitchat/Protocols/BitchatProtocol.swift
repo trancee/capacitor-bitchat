@@ -79,7 +79,8 @@ enum MessageType: UInt8 {
     
     // Fragmentation (simplified)
     case fragment = 0x20        // Single fragment type for large messages
-    
+    case fileTransfer = 0x22    // Binary file/audio/image payloads
+
     var description: String {
         switch self {
         case .announce: return "announce"
@@ -89,6 +90,7 @@ enum MessageType: UInt8 {
         case .noiseHandshake: return "noiseHandshake"
         case .noiseEncrypted: return "noiseEncrypted"
         case .fragment: return "fragment"
+        case .fileTransfer: return "fileTransfer"
         }
     }
 }
@@ -161,7 +163,6 @@ enum DeliveryStatus: Codable, Equatable, Hashable {
 // MARK: - Delegate Protocol
 
 protocol BitchatDelegate: AnyObject {
-    @available(iOS 15, *)
     func didReceiveMessage(_ message: BitchatMessage)
     func didConnectToPeer(_ peerID: PeerID)
     func didDisconnectFromPeer(_ peerID: PeerID)
@@ -177,8 +178,8 @@ protocol BitchatDelegate: AnyObject {
 
     // Bluetooth state updates for user notifications
     func didUpdateBluetoothState(_ state: CBManagerState)
-    func didReceivePublicMessage(from peerID: PeerID, nickname: String, content: String, timestamp: Date)
-    
+    func didReceivePublicMessage(from peerID: PeerID, nickname: String, content: String, timestamp: Date, messageID: String?)
+
     // trancee
     func onStarted(_ peerID: PeerID, success: Bool?)
     func onStopped()
@@ -208,7 +209,7 @@ extension BitchatDelegate {
         // Default empty implementation
     }
 
-    func didReceivePublicMessage(from peerID: PeerID, nickname: String, content: String, timestamp: Date) {
+    func didReceivePublicMessage(from peerID: PeerID, nickname: String, content: String, timestamp: Date, messageID: String?) {
         // Default empty implementation
     }
 }

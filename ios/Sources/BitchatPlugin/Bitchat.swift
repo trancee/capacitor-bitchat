@@ -161,7 +161,7 @@ import CoreBluetooth
             let messageID = UUID()
 
             if let peerID = options.getPeerID() {
-                meshService.sendMessage(message, to: peerID, messageID: messageID.uuidString.lowercased())
+                meshService.sendMessage(message, to: PeerID(str: peerID), messageID: messageID.uuidString.lowercased())
             } else {
                 meshService.sendMessage(message, messageID: messageID.uuidString.lowercased())
             }
@@ -179,7 +179,6 @@ import CoreBluetooth
 
     // MARK: - Message Reception
 
-    @available(iOS 15, *)
     func didReceiveMessage(_ message: BitchatMessage) {
         // Route to appropriate handler
         if message.isPrivate {
@@ -269,9 +268,11 @@ import CoreBluetooth
     func onSent(_ messageID: String, peerID: PeerID?) {
         guard let messageID = Helper.makeUUID(messageID) else { return }
 
-        let peerID = peerID!.id
-
-        plugin.onSentEvent(messageID, peerID: peerID)
+        if let peerID = peerID {
+            plugin.onSentEvent(messageID, peerID: peerID.id)
+        } else {
+            plugin.onSentEvent(messageID)
+        }
     }
 
     func onRSSIUpdated(_ peerID: PeerID, rssi: Int) {

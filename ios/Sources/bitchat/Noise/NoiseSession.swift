@@ -195,12 +195,6 @@ class NoiseSession {
         }
     }
     
-    func getHandshakeHash() -> Data? {
-        return sessionQueue.sync {
-            return handshakeHash
-        }
-    }
-    
     func reset() {
         sessionQueue.sync(flags: .barrier) {
             let wasEstablished = state == .established

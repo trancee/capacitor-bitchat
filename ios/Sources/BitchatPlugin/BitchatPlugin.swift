@@ -246,7 +246,10 @@ public class BitchatPlugin: CAPPlugin, CAPBridgedPlugin {
      * Transmission Listeners
      */
 
-    func onSentEvent(_ messageID: UUID, peerID: String) {
+    func onSentEvent(_ messageID: UUID) {
+        onSentEvent(messageID, peerID: nil)
+    }
+    func onSentEvent(_ messageID: UUID, peerID: String?) {
         let event: SentEvent = .init(messageID, peerID)
 
         notifyListeners(self.eventSent, data: event.toJSObject())

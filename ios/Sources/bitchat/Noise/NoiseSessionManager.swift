@@ -26,19 +26,6 @@ final class NoiseSessionManager {
     
     // MARK: - Session Management
     
-    func createSession(for peerID: PeerID, role: NoiseRole) -> NoiseSession {
-        return managerQueue.sync(flags: .barrier) {
-            let session = SecureNoiseSession(
-                peerID: peerID,
-                role: role,
-                keychain: keychain,
-                localStaticKey: localStaticKey
-            )
-            sessions[peerID] = session
-            return session
-        }
-    }
-    
     func getSession(for peerID: PeerID) -> NoiseSession? {
         return managerQueue.sync {
             return sessions[peerID]
@@ -47,14 +34,9 @@ final class NoiseSessionManager {
     
     func removeSession(for peerID: PeerID) {
         managerQueue.sync(flags: .barrier) {
-            if let session = sessions[peerID] {
-                if session.isEstablished() {
-                    SecureLogger.info(.sessionExpired(peerID: peerID.id))
-                }
-                // Clear sensitive data before removing
-                session.reset()
+            if let session = sessions.removeValue(forKey: peerID) {
+                session.reset() // Clear sensitive data before removing
             }
-            _ = sessions.removeValue(forKey: peerID)
         }
     }
 
@@ -64,12 +46,6 @@ final class NoiseSessionManager {
                 session.reset()
             }
             sessions.removeAll()
-        }
-    }
-    
-    func getEstablishedSessions() -> [PeerID: NoiseSession] {
-        return managerQueue.sync {
-            return sessions.filter { $0.value.isEstablished() }
         }
     }
     
@@ -204,10 +180,6 @@ final class NoiseSessionManager {
     
     func getRemoteStaticKey(for peerID: PeerID) -> Curve25519.KeyAgreement.PublicKey? {
         return getSession(for: peerID)?.getRemoteStaticPublicKey()
-    }
-    
-    func getHandshakeHash(for peerID: PeerID) -> Data? {
-        return getSession(for: peerID)?.getHandshakeHash()
     }
     
     // MARK: - Session Rekeying
