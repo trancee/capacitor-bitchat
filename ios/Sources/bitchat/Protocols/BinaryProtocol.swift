@@ -136,6 +136,7 @@ struct BinaryProtocol {
         static let hasRecipient: UInt8 = 0x01
         static let hasSignature: UInt8 = 0x02
         static let isCompressed: UInt8 = 0x04
+        static let hasRoute: UInt8 = 0x08
     }
     
     // Encode BitchatPacket to binary format
@@ -159,8 +160,21 @@ struct BinaryProtocol {
         }
 
         let lengthFieldBytes = lengthFieldSize(for: version)
+        let originalRoute = packet.route ?? []
+        if originalRoute.contains(where: { $0.isEmpty }) { return nil }
+        let sanitizedRoute: [Data] = originalRoute.map { hop in
+            if hop.count == senderIDSize { return hop }
+            if hop.count > senderIDSize { return Data(hop.prefix(senderIDSize)) }
+            var padded = hop
+            padded.append(Data(repeating: 0, count: senderIDSize - hop.count))
+            return padded
+        }
+        guard sanitizedRoute.count <= 255 else { return nil }
+
+        let hasRoute = !sanitizedRoute.isEmpty
+        let routeLength = hasRoute ? 1 + sanitizedRoute.count * senderIDSize : 0
         let originalSizeFieldBytes = isCompressed ? lengthFieldBytes : 0
-        let payloadDataSize = payload.count + originalSizeFieldBytes
+        let payloadDataSize = routeLength + payload.count + originalSizeFieldBytes
 
         if version == 1 && payloadDataSize > Int(UInt16.max) { return nil }
         if version == 2 && payloadDataSize > Int(UInt32.max) { return nil }
@@ -184,6 +198,7 @@ struct BinaryProtocol {
         if packet.recipientID != nil { flags |= Flags.hasRecipient }
         if packet.signature != nil { flags |= Flags.hasSignature }
         if isCompressed { flags |= Flags.isCompressed }
+        if hasRoute { flags |= Flags.hasRoute }
         data.append(flags)
 
         if version == 2 {
@@ -208,6 +223,13 @@ struct BinaryProtocol {
             data.append(recipientBytes)
             if recipientBytes.count < recipientIDSize {
                 data.append(Data(repeating: 0, count: recipientIDSize - recipientBytes.count))
+            }
+        }
+
+        if hasRoute {
+            data.append(UInt8(sanitizedRoute.count))
+            for hop in sanitizedRoute {
+                data.append(hop)
             }
         }
 
@@ -320,9 +342,27 @@ struct BinaryProtocol {
                 if recipientID == nil { return nil }
             }
 
+            var route: [Data]? = nil
+            var remainingPayloadBytes = payloadLength
+
+            if (flags & Flags.hasRoute) != 0 {
+                guard remainingPayloadBytes >= 1, let routeCount = read8() else { return nil }
+                remainingPayloadBytes -= 1
+                if routeCount > 0 {
+                    var hops: [Data] = []
+                    for _ in 0..<Int(routeCount) {
+                        guard remainingPayloadBytes >= senderIDSize,
+                              let hop = readData(senderIDSize) else { return nil }
+                        remainingPayloadBytes -= senderIDSize
+                        hops.append(hop)
+                    }
+                    route = hops
+                }
+            }
+
             let payload: Data
             if isCompressed {
-                guard payloadLength >= lengthFieldBytes else { return nil }
+                guard remainingPayloadBytes >= lengthFieldBytes else { return nil }
                 let originalSize: Int
                 if version == 2 {
                     guard let rawSize = read32() else { return nil }
@@ -331,16 +371,12 @@ struct BinaryProtocol {
                     guard let rawSize = read16() else { return nil }
                     originalSize = Int(rawSize)
                 }
-                // Guard to keep decompression bounded to sane BLE payload limits
-                // Use maxFramedFileBytes to account for TLV overhead in file transfer payloads
+                remainingPayloadBytes -= lengthFieldBytes
                 guard originalSize >= 0 && originalSize <= FileTransferLimits.maxFramedFileBytes else { return nil }
-                let compressedSize = payloadLength - lengthFieldBytes
-                guard compressedSize >= 0, let compressed = readData(compressedSize) else { return nil }
+                let compressedSize = remainingPayloadBytes
+                guard compressedSize > 0, let compressed = readData(compressedSize) else { return nil }
+                remainingPayloadBytes = 0
 
-                // Validate compression ratio to prevent zip bomb attacks
-                // Primary protection: originalSize capped at 1MB (line 336)
-                // Defense-in-depth: reject extreme ratios (prevents DoS via memory allocation)
-                guard compressedSize > 0 else { return nil }
                 let compressionRatio = Double(originalSize) / Double(compressedSize)
                 guard compressionRatio <= 50_000.0 else {
                     SecureLogger.warning("🚫 Suspicious compression ratio: \(String(format: "%.0f", compressionRatio)):1", category: .security)
@@ -351,7 +387,9 @@ struct BinaryProtocol {
                       decompressed.count == originalSize else { return nil }
                 payload = decompressed
             } else {
-                guard let rawPayload = readData(payloadLength) else { return nil }
+                guard remainingPayloadBytes >= 0,
+                      let rawPayload = readData(remainingPayloadBytes) else { return nil }
+                remainingPayloadBytes = 0
                 payload = rawPayload
             }
 
@@ -371,7 +409,8 @@ struct BinaryProtocol {
                 payload: payload,
                 signature: signature,
                 ttl: ttl,
-                version: version
+                version: version,
+                route: route
             )
         }
     }

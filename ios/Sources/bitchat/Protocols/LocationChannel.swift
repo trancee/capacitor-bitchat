@@ -100,7 +100,7 @@ struct GeohashChannel: Codable, Equatable, Hashable, Identifiable {
 enum ChannelID: Equatable, Codable {
     case mesh
     case location(GeohashChannel)
-
+    
     /// Human readable name for UI.
     @available(iOS 15, *)
     var displayName: String {
@@ -111,12 +111,26 @@ enum ChannelID: Equatable, Codable {
             return ch.displayName
         }
     }
-
+    
     /// Nostr tag value for scoping (geohash), if applicable.
     var nostrGeohashTag: String? {
         switch self {
         case .mesh: return nil
         case .location(let ch): return ch.geohash
+        }
+    }
+    
+    var isMesh: Bool {
+        switch self {
+        case .mesh:     true
+        case .location: false
+        }
+    }
+    
+    var isLocation: Bool {
+        switch self {
+        case .mesh:     false
+        case .location: true
         }
     }
 }

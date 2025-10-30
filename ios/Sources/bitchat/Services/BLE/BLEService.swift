@@ -74,7 +74,8 @@ final class BLEService: NSObject {
         formatter.dateFormat = "yyyyMMdd_HHmmss"
         return formatter
     }()
-    
+    private let meshTopology = MeshTopologyTracker()
+
     // 5. Fragment Reassembly (necessary for messages > MTU)
     private struct FragmentKey: Hashable { let sender: UInt64; let id: UInt64 }
     private var incomingFragments: [FragmentKey: [Int: Data]] = [:]
@@ -570,6 +571,7 @@ final class BLEService: NSObject {
         peerToPeripheralUUID.removeAll()
         subscribedCentrals.removeAll()
         centralToPeerID.removeAll()
+        meshTopology.reset()
     }
     
     // MARK: Connectivity and peers
@@ -734,6 +736,8 @@ final class BLEService: NSObject {
                 version: 2
             )
 
+            self.applyRouteIfAvailable(&packet, to: peerID)
+
             if let signed = self.noiseService.signPacket(packet) {
                 packet = signed
             }
@@ -753,7 +757,7 @@ final class BLEService: NSObject {
             SecureLogger.debug("📤 Sending READ receipt for message \(receipt.originalMessageID) to \(peerID)", category: .session)
             do {
                 let encrypted = try noiseService.encrypt(payload, for: peerID)
-                let packet = BitchatPacket(
+                var packet = BitchatPacket(
                     type: MessageType.noiseEncrypted.rawValue,
                     senderID: myPeerIDData,
                     recipientID: Data(hexString: peerID.id),
@@ -762,6 +766,7 @@ final class BLEService: NSObject {
                     signature: nil,
                     ttl: messageTTL
                 )
+                applyRouteIfAvailable(&packet, to: peerID)
                 broadcastPacket(packet)
             } catch {
                 SecureLogger.error("Failed to send read receipt: \(error)")
@@ -1228,7 +1233,7 @@ final class BLEService: NSObject {
         if noiseService.hasEstablishedSession(with: peerID) {
             do {
                 let encrypted = try noiseService.encrypt(payload, for: peerID)
-                let packet = BitchatPacket(
+                var packet = BitchatPacket(
                     type: MessageType.noiseEncrypted.rawValue,
                     senderID: myPeerIDData,
                     recipientID: Data(hexString: peerID.id),
@@ -1237,6 +1242,7 @@ final class BLEService: NSObject {
                     signature: nil,
                     ttl: messageTTL
                 )
+                applyRouteIfAvailable(&packet, to: peerID)
                 broadcastPacket(packet)
             } catch {
                 SecureLogger.error("Failed to send delivery ACK: \(error)")
@@ -1411,10 +1417,15 @@ final class BLEService: NSObject {
         let noisePub = noiseService.getStaticPublicKeyData()  // For noise handshakes and peer identification
         let signingPub = noiseService.getSigningPublicKeyData()  // For signature verification
         
+        let connectedPeerIDs: [Data] = collectionsQueue.sync {
+            peers.values.filter { $0.isConnected }.compactMap { $0.peerID.routingData }
+        }
+
         let announcement = AnnouncementPacket(
             nickname: myNickname,
             noisePublicKey: noisePub,
-            signingPublicKey: signingPub
+            signingPublicKey: signingPub,
+            directNeighbors: connectedPeerIDs
         )
         
         guard let payload = announcement.encode() else {
@@ -1751,6 +1762,7 @@ func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeriph
                     peers[peerID] = info
                 }
             }
+            clearDirectLink(with: peerID)
         }
         
         // Restart scanning with allow duplicates for faster rediscovery
@@ -2085,6 +2097,7 @@ extension BLEService: CBPeripheralDelegate {
                     peripherals[peripheralUUID] = state
                 }
                 peerToPeripheralUUID[senderID] = peripheralUUID
+                registerDirectLink(with: senderID)
             }
 
             let msgID = makeMessageID(for: packet)
@@ -2253,7 +2266,8 @@ extension BLEService: CBPeripheralManagerDelegate {
             
             // Clean up mappings
             centralToPeerID.removeValue(forKey: centralUUID)
-            
+            clearDirectLink(with: peerID)
+
             // Update UI immediately
             notifyUI { [weak self] in
                 guard let self = self else { return }
@@ -2371,7 +2385,10 @@ extension BLEService: CBPeripheralManagerDelegate {
                     subscribedCentrals.append(sorted[0].central)
                 }
                 if packet.type == MessageType.announce.rawValue {
-                    if packet.ttl == messageTTL { centralToPeerID[centralUUID] = senderID }
+                    if packet.ttl == messageTTL {
+                        centralToPeerID[centralUUID] = senderID
+                        registerDirectLink(with: senderID)
+                    }
                     // Record ingress link for last-hop suppression then process
                     let msgID = makeMessageID(for: packet)
                     collectionsQueue.async(flags: .barrier) { [weak self] in
@@ -2481,6 +2498,63 @@ extension BLEService {
         )
     }
 
+    private func routingData(for peerID: PeerID) -> Data? {
+        peerID.toShort().routingData
+    }
+
+    private func registerDirectLink(with peerID: PeerID) {
+        meshTopology.recordDirectLink(between: myPeerIDData, and: routingData(for: peerID))
+    }
+
+    private func clearDirectLink(with peerID: PeerID) {
+        meshTopology.removeDirectLink(between: myPeerIDData, and: routingData(for: peerID))
+    }
+
+    private func registerRoute(_ route: [Data]?) {
+        guard let hops = route, !hops.isEmpty else { return }
+        meshTopology.recordRoute(hops)
+    }
+
+    private func computeRoute(to peerID: PeerID) -> [Data]? {
+        meshTopology.computeRoute(from: myPeerIDData, to: routingData(for: peerID))
+    }
+
+    private func applyRouteIfAvailable(_ packet: inout BitchatPacket, to recipient: PeerID) {
+        guard let route = computeRoute(to: recipient), route.count >= 2 else { return }
+        packet.route = route
+        meshTopology.recordRoute(route)
+    }
+
+    private func routingPeer(from data: Data) -> PeerID? {
+        PeerID(routingData: data)
+    }
+
+    private func forwardAlongRouteIfNeeded(_ packet: BitchatPacket) -> Bool {
+        guard let route = packet.route, !route.isEmpty else { return false }
+        let myRoutingData = routingData(for: myPeerID) ?? (myPeerIDData.isEmpty ? nil : myPeerIDData)
+        guard let selfData = myRoutingData,
+              let index = route.firstIndex(of: selfData) else { return false }
+
+        // No further hops: respect explicit route termination
+        if index == route.count - 1 {
+            return true
+        }
+
+        guard packet.ttl > 1 else { return true }
+
+        let nextHopData = route[index + 1]
+        guard let nextPeer = routingPeer(from: nextHopData),
+              isPeerConnected(nextPeer) else {
+            return false
+        }
+
+        registerDirectLink(with: nextPeer)
+        var relayPacket = packet
+        relayPacket.ttl = packet.ttl - 1
+        sendPacketDirected(relayPacket, to: nextPeer)
+        return true
+    }
+
     /// Safely fetch the current direct-link state for a peer using the BLE queue.
     private func linkState(for peerID: PeerID) -> (hasPeripheral: Bool, hasCentral: Bool) {
         let computeState = { () -> (Bool, Bool) in
@@ -2516,6 +2590,7 @@ extension BLEService {
         let fingerprint = noiseService.getIdentityFingerprint()
         myPeerID = PeerID(str: fingerprint.prefix(16))
         myPeerIDData = Data(hexString: myPeerID.id) ?? Data()
+        meshTopology.reset()
     }
 
     private func restartGossipManager() {
@@ -2534,7 +2609,7 @@ extension BLEService {
         }
         do {
             let encrypted = try noiseService.encrypt(typedPayload, for: peerID)
-            let packet = BitchatPacket(
+            var packet = BitchatPacket(
                 type: MessageType.noiseEncrypted.rawValue,
                 senderID: myPeerIDData,
                 recipientID: Data(hexString: peerID.id),
@@ -2543,6 +2618,7 @@ extension BLEService {
                 signature: nil,
                 ttl: messageTTL
             )
+            applyRouteIfAvailable(&packet, to: peerID)
             broadcastPacket(packet)
         } catch {
             SecureLogger.error("Failed to send verification payload: \(error)")
@@ -2761,7 +2837,7 @@ extension BLEService {
                     }
                 }
                 
-                let packet = BitchatPacket(
+                var packet = BitchatPacket(
                     type: MessageType.noiseEncrypted.rawValue,
                     senderID: myPeerIDData,
                     recipientID: recipientData,
@@ -2770,7 +2846,8 @@ extension BLEService {
                     signature: nil,
                     ttl: messageTTL
                 )
-                
+                applyRouteIfAvailable(&packet, to: recipientID)
+
                 broadcastPacket(packet)
                 
                 // Notify delegate that message was sent
@@ -2813,7 +2890,7 @@ extension BLEService {
             let handshakeData = try noiseService.initiateHandshake(with: peerID)
             
             // Send handshake init
-            let packet = BitchatPacket(
+            var packet = BitchatPacket(
                 type: MessageType.noiseHandshake.rawValue,
                 senderID: myPeerIDData,
                 recipientID: Data(hexString: peerID.id),
@@ -2822,6 +2899,7 @@ extension BLEService {
                 signature: nil,
                 ttl: messageTTL
             )
+            applyRouteIfAvailable(&packet, to: peerID)
             broadcastPacket(packet)
         } catch {
             SecureLogger.error("Failed to initiate handshake: \(error)")
@@ -2855,7 +2933,7 @@ extension BLEService {
 
                 let encrypted = try noiseService.encrypt(messagePayload, for: peerID)
 
-                let packet = BitchatPacket(
+                var packet = BitchatPacket(
                     type: MessageType.noiseEncrypted.rawValue,
                     senderID: myPeerIDData,
                     recipientID: Data(hexString: peerID.id),
@@ -2864,6 +2942,7 @@ extension BLEService {
                     signature: nil,
                     ttl: messageTTL
                 )
+                applyRouteIfAvailable(&packet, to: peerID)
 
                 // We're already on messageQueue from the callback
                 broadcastPacket(packet)
@@ -3019,7 +3098,8 @@ extension BLEService {
                 timestamp: packet.timestamp,
                 payload: payload,
                 signature: nil,
-                ttl: packet.ttl
+                ttl: packet.ttl,
+                route: packet.route
             )
 
             let workItem = DispatchWorkItem { [weak self] in
@@ -3235,6 +3315,11 @@ extension BLEService {
             return
         }
         
+        registerRoute(packet.route)
+        if peerID != myPeerID && packet.ttl == messageTTL {
+            registerDirectLink(with: peerID)
+        }
+
         // Deduplication (thread-safe)
         let senderID = PeerID(hexData: packet.senderID)
         // Include packet type in message ID to prevent collisions between different packet types
@@ -3318,6 +3403,10 @@ extension BLEService {
             break
         }
         
+        if forwardAlongRouteIfNeeded(packet) {
+            return
+        }
+
         // Relay if TTL > 1 and we're not the original sender
         // Relay decision and scheduling (extracted via RelayController)
         do {
@@ -3666,7 +3755,7 @@ extension BLEService {
             do {
                 if let response = try noiseService.processHandshakeMessage(from: peerID, message: packet.payload) {
                     // Send response
-                    let responsePacket = BitchatPacket(
+                    var responsePacket = BitchatPacket(
                         type: MessageType.noiseHandshake.rawValue,
                         senderID: myPeerIDData,
                         recipientID: Data(hexString: peerID.id),
@@ -3675,6 +3764,7 @@ extension BLEService {
                         signature: nil,
                         ttl: messageTTL
                     )
+                    applyRouteIfAvailable(&responsePacket, to: peerID)
                     // We're on messageQueue from delegate callback
                     broadcastPacket(responsePacket)
                 }
