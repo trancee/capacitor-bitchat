@@ -12,6 +12,7 @@ import com.bitchat.android.protocol.MessageType
 import com.bitchat.android.protocol.SpecialRecipients
 import com.bitchat.android.model.RequestSyncPacket
 import com.bitchat.android.sync.GossipSyncManager
+import com.bitchat.android.util.AppConstants
 import kotlinx.coroutines.*
 import java.util.*
 import kotlin.math.sign
@@ -33,7 +34,7 @@ import kotlin.random.Random
 class BluetoothMeshService(private val context: Context) {
     companion object {
         private const val TAG = "BluetoothMeshService"
-        private const val MAX_TTL: UByte = 7u
+        private val MAX_TTL: UByte = AppConstants.MESSAGE_TTL_HOPS
 
         // Coroutines
         @JvmStatic
@@ -141,11 +142,6 @@ class BluetoothMeshService(private val context: Context) {
         try {
             connectionManager.setNicknameResolver { pid -> peerManager.getPeerNickname(pid) }
         } catch (_: Exception) { }
-
-//        encryptionService.onSessionEstablished = { peerID ->
-//            delegate?.onEstablished(peerID) // trancee
-//        }
-
         // PeerManager delegates to main mesh service delegate
         peerManager.delegate = object : PeerManagerDelegate {
             override fun onPeerListUpdated(peerIDs: List<String>) {
@@ -174,6 +170,7 @@ class BluetoothMeshService(private val context: Context) {
                     delay(1000)
                     storeForwardManager.sendCachedMessages(peerID)
                 }
+
                 delegate?.onEstablished(peerID) // trancee
             }
             
@@ -333,7 +330,14 @@ class BluetoothMeshService(private val context: Context) {
                 
                 // Store fingerprint for the peer via centralized fingerprint manager
                 val fingerprint = peerManager.storeFingerprintForPeer(newPeerID, publicKey)
-
+                /* trancee
+                // Index existing Nostr mapping by the new peerID if we have it
+                try {
+                    com.bitchat.android.favorites.FavoritesPersistenceService.shared.findNostrPubkey(publicKey)?.let { npub ->
+                        com.bitchat.android.favorites.FavoritesPersistenceService.shared.updateNostrPublicKeyForPeerID(newPeerID, npub)
+                    }
+                } catch (_: Exception) { }
+                */
                 // If there was a previous peer ID, remove it to avoid duplicates
                 previousPeerID?.let { oldPeerID ->
                     delegate?.onPeerIDChanged(newPeerID, oldPeerID, nickname) // trancee
@@ -389,7 +393,7 @@ class BluetoothMeshService(private val context: Context) {
             override fun getBroadcastRecipient(): ByteArray {
                 return SpecialRecipients.BROADCAST
             }
-
+            
             override suspend fun handleNoiseHandshake(routed: RoutedPacket): Boolean {
                 return securityManager.handleNoiseHandshake(routed)
             }
@@ -407,27 +411,21 @@ class BluetoothMeshService(private val context: Context) {
                     val deviceAddress = routed.relayAddress
                     val pid = routed.peerID
                     if (deviceAddress != null && pid != null) {
-                        // Only set mapping if not already mapped
-                        if (!connectionManager.addressPeerMap.containsKey(deviceAddress)) {
+                        // First ANNOUNCE over a device connection defines a direct neighbor.
+                        if (!connectionManager.hasSeenFirstAnnounce(deviceAddress)) {
+                            // Bind or rebind this device address to the announcing peer
                             connectionManager.addressPeerMap[deviceAddress] = pid
-                            Log.d(TAG, "Mapped device $deviceAddress to peer $pid on ANNOUNCE")
+                            connectionManager.noteAnnounceReceived(deviceAddress)
+                            Log.d(TAG, "Mapped device $deviceAddress to peer $pid on FIRST-ANNOUNCE for this connection")
 
-                            // Mark this peer as directly connected for UI
-                            try {
-                                peerManager.getPeerInfo(pid)?.let {
-                                    peer ->
-                                    // Set direct connection flag
-                                    // (This will also trigger a peer list update)
-                                    peerManager.setDirectConnection(pid, true)
-                                    // Also push reactive directness state to UI (best-effort)
-                                    try {
-                                        // Note: UI observes via didUpdatePeerList, but we can also update ChatState on a timer
-                                    } catch (_: Exception) { }
-                                    delegate?.onFound(peer.id, peer.nickname) // trancee
-                                }
-                            } catch (_: Exception) { }
+                            // Mark as directly connected (upgrades from routed if needed)
+                            try { peerManager.setDirectConnection(pid, true) } catch (_: Exception) { }
 
-                            // Schedule initial sync for this new directly connected peer only
+                            try { peerManager.getPeerInfo(pid)?.let { peer ->
+                                delegate?.onFound(peer.id, peer.nickname) // trancee
+                            } } catch (_: Exception) { }
+
+                            // Initial sync for this newly direct peer
                             try { gossipSyncManager.scheduleInitialSyncToPeer(pid, 1_000) } catch (_: Exception) { }
                         }
                     }
@@ -505,6 +503,11 @@ class BluetoothMeshService(private val context: Context) {
                     peer?.let { peerID ->
                         delegate?.onConnected(peerID) // trancee
                     }
+                    /*
+                    val nick = peer?.let { peerManager.getPeerNickname(it) } ?: "unknown"
+                    com.bitchat.android.ui.debug.DebugSettingsManager.getInstance()
+                        .logPeerConnection(peer ?: "unknown", nick, addr, isInbound = !connectionManager.isClientConnection(addr)!!)
+                    */
                 } catch (_: Exception) { }
             }
 
@@ -523,6 +526,14 @@ class BluetoothMeshService(private val context: Context) {
                         // Peer might still be reachable indirectly; mark as not-direct
                         try { peerManager.setDirectConnection(peer, false) } catch (_: Exception) { }
                     }
+                    /* trancee
+                    // Verbose debug: device disconnected
+                    try {
+                        val nick = peerManager.getPeerNickname(peer) ?: "unknown"
+                        com.bitchat.android.ui.debug.DebugSettingsManager.getInstance()
+                            .logPeerDisconnection(peer, nick, addr)
+                    } catch (_: Exception) { }
+                    */
                 }
             }
             
@@ -530,6 +541,7 @@ class BluetoothMeshService(private val context: Context) {
                 // Find the peer ID for this device address and update RSSI in PeerManager
                 connectionManager.addressPeerMap[deviceAddress]?.let { peerID ->
                     peerManager.updatePeerRSSI(peerID, rssi)
+
                     delegate?.onRSSIUpdated(peerID, rssi) // trancee
                 }
             }
@@ -713,7 +725,7 @@ class BluetoothMeshService(private val context: Context) {
                             timestamp = System.currentTimeMillis().toULong(),
                             payload = encrypted,
                             signature = null,
-                            ttl = 7u
+                            ttl = AppConstants.MESSAGE_TTL_HOPS
                         )
                         
                         // Sign and send the encrypted packet
@@ -829,7 +841,18 @@ class BluetoothMeshService(private val context: Context) {
     fun sendReadReceipt(messageID: String, recipientPeerID: String, readerNickname: String) {
         serviceScope?.launch {
             Log.d(TAG, "📖 Sending read receipt for message $messageID to $recipientPeerID")
-            
+            /* trancee
+            // Route geohash read receipts via MessageRouter instead of here
+            val geo = runCatching { com.bitchat.android.services.MessageRouter.tryGetInstance() }.getOrNull()
+            val isGeoAlias = try {
+                val map = com.bitchat.android.nostr.GeohashAliasRegistry.snapshot()
+                map.containsKey(recipientPeerID)
+            } catch (_: Exception) { false }
+            if (isGeoAlias && geo != null) {
+                geo.sendReadReceipt(com.bitchat.android.model.ReadReceipt(messageID), recipientPeerID)
+                return@launch
+            }
+            */
             try {
                 // Create read receipt payload using NoisePayloadType exactly like iOS
                 val readReceiptPayload = com.bitchat.android.model.NoisePayload(
@@ -849,7 +872,7 @@ class BluetoothMeshService(private val context: Context) {
                     timestamp = System.currentTimeMillis().toULong(),
                     payload = encrypted,
                     signature = null,
-                    ttl = 7u // Same TTL as iOS messageTTL
+                    ttl = AppConstants.MESSAGE_TTL_HOPS // Same TTL as iOS messageTTL
                 )
                 
                 // Sign the packet before broadcasting

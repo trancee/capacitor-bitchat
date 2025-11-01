@@ -5,6 +5,7 @@ import com.bitchat.android.protocol.BitchatPacket
 import com.bitchat.android.protocol.MessageType
 import com.bitchat.android.protocol.MessagePadding
 import com.bitchat.android.model.FragmentPayload
+import com.bitchat.android.util.AppConstants
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,10 +23,10 @@ class FragmentManager {
     companion object {
         private const val TAG = "FragmentManager"
         // iOS values: 512 MTU threshold, 469 max fragment size (512 MTU - headers)
-        private const val FRAGMENT_SIZE_THRESHOLD = 512 // Matches iOS: if data.count > 512
-        private const val MAX_FRAGMENT_SIZE = 469        // Matches iOS: maxFragmentSize = 469 
-        private const val FRAGMENT_TIMEOUT = 30000L     // Matches iOS: 30 seconds cleanup
-        private const val CLEANUP_INTERVAL = 10000L     // 10 seconds cleanup check
+        private const val FRAGMENT_SIZE_THRESHOLD = AppConstants.Fragmentation.FRAGMENT_SIZE_THRESHOLD // Matches iOS: if data.count > 512
+        private const val MAX_FRAGMENT_SIZE = AppConstants.Fragmentation.MAX_FRAGMENT_SIZE             // Matches iOS: maxFragmentSize = 469
+        private const val FRAGMENT_TIMEOUT = AppConstants.Fragmentation.FRAGMENT_TIMEOUT_MS            // Matches iOS: 30 seconds cleanup
+        private const val CLEANUP_INTERVAL = AppConstants.Fragmentation.CLEANUP_INTERVAL_MS            // 10 seconds cleanup check
     }
     
     // Fragment storage - iOS equivalent: incomingFragments: [String: [Int: Data]]
@@ -179,9 +180,13 @@ class FragmentManager {
                     // iOS cleanup: incomingFragments.removeValue(forKey: fragmentID)
                     incomingFragments.remove(fragmentIDString)
                     fragmentMetadata.remove(fragmentIDString)
-                    
-                    Log.d(TAG, "Successfully reassembled and decoded original packet of ${reassembledData.size} bytes")
-                    return originalPacket
+
+                    // Suppress re-broadcast of the reassembled packet by zeroing TTL.
+                    // We already relayed the incoming fragments; setting TTL=0 ensures
+                    // PacketRelayManager will skip relaying this reconstructed packet.
+                    val suppressedTtlPacket = originalPacket.copy(ttl = 0u.toUByte())
+                    Log.d(TAG, "Successfully reassembled original (${reassembledData.size} bytes); set TTL=0 to suppress relay")
+                    return suppressedTtlPacket
                 } else {
                     val metadata = fragmentMetadata[fragmentIDString]
                     Log.e(TAG, "Failed to decode reassembled packet (type=${metadata?.first}, total=${metadata?.second})")

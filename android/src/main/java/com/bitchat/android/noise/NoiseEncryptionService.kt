@@ -5,6 +5,7 @@ import android.util.Log
 import com.bitchat.android.identity.SecureIdentityStateManager
 import com.bitchat.android.mesh.PeerFingerprintManager
 import com.bitchat.android.noise.southernstorm.protocol.Noise
+import com.bitchat.android.util.AppConstants
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
@@ -24,8 +25,8 @@ class NoiseEncryptionService(private val context: Context) {
         private const val TAG = "NoiseEncryptionService"
         
         // Session limits for performance and security
-        private const val REKEY_TIME_LIMIT = 3600000L // 1 hour (same as iOS)
-        private const val REKEY_MESSAGE_LIMIT = 1000L // 1k messages (matches iOS) (same as iOS)
+        private const val REKEY_TIME_LIMIT = AppConstants.Noise.REKEY_TIME_LIMIT_MS // 1 hour (same as iOS)
+        private const val REKEY_MESSAGE_LIMIT = AppConstants.Noise.REKEY_MESSAGE_LIMIT_ENCRYPTION // 1k messages (matches iOS) (same as iOS)
     }
     
     // Static identity key (persistent across app restarts) - loaded from secure storage
