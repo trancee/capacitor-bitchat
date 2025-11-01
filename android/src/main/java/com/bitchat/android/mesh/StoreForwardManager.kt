@@ -4,6 +4,7 @@ import android.util.Log
 import com.bitchat.android.protocol.BitchatPacket
 import com.bitchat.android.protocol.MessageType
 import com.bitchat.android.protocol.SpecialRecipients
+import com.bitchat.android.util.AppConstants
 import kotlinx.coroutines.*
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -16,10 +17,10 @@ class StoreForwardManager {
     
     companion object {
         private const val TAG = "StoreForwardManager"
-        private const val MESSAGE_CACHE_TIMEOUT = 43200000L  // 12 hours for regular peers
-        private const val MAX_CACHED_MESSAGES = 100  // For regular peers
-        private const val MAX_CACHED_MESSAGES_FAVORITES = 1000  // For favorites
-        private const val CLEANUP_INTERVAL = 600000L // 10 minutes
+        private const val MESSAGE_CACHE_TIMEOUT = AppConstants.StoreForward.MESSAGE_CACHE_TIMEOUT_MS  // 12 hours for regular peers
+        private const val MAX_CACHED_MESSAGES = AppConstants.StoreForward.MAX_CACHED_MESSAGES  // For regular peers
+        private const val MAX_CACHED_MESSAGES_FAVORITES = AppConstants.StoreForward.MAX_CACHED_MESSAGES_FAVORITES  // For favorites
+        private const val CLEANUP_INTERVAL = AppConstants.StoreForward.CLEANUP_INTERVAL_MS // 10 minutes
     }
     
     /**

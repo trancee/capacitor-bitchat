@@ -5,6 +5,7 @@ import kotlinx.parcelize.Parcelize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import android.util.Log
+import com.bitchat.android.util.AppConstants
 
 /**
  * Message types - exact same as iOS version with Noise Protocol support
@@ -97,7 +98,7 @@ data class BitchatPacket(
             timestamp = timestamp,
             payload = payload,
             signature = null, // Remove signature for signing
-            ttl = 0u // Use fixed TTL=0 for signing to ensure relay compatibility
+            ttl = AppConstants.SYNC_TTL_HOPS // Use fixed TTL=0 for signing to ensure relay compatibility
         )
         return BinaryProtocol.encode(unsignedPacket)
     }

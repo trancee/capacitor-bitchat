@@ -1,6 +1,7 @@
 package com.bitchat.android.protocol
 
 import android.util.Log
+import com.bitchat.android.util.AppConstants
 import java.io.ByteArrayOutputStream
 import java.util.zip.Deflater
 import java.util.zip.Inflater
@@ -10,7 +11,7 @@ import java.util.zip.Inflater
  * Uses the same zlib algorithm as iOS CompressionUtil.swift
  */
 object CompressionUtil {
-    private const val COMPRESSION_THRESHOLD = 100  // bytes - same as iOS
+    private const val COMPRESSION_THRESHOLD = AppConstants.Protocol.COMPRESSION_THRESHOLD_BYTES  // bytes - same as iOS
     
     /**
      * Helper to check if compression is worth it - exact same logic as iOS

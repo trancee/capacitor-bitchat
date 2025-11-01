@@ -10,6 +10,7 @@ import android.util.Log
 import com.bitchat.android.protocol.SpecialRecipients
 import com.bitchat.android.model.RoutedPacket
 import com.bitchat.android.protocol.MessageType
+import com.bitchat.android.util.AppConstants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,7 +47,7 @@ class BluetoothPacketBroadcaster(
     
     companion object {
         private const val TAG = "BluetoothPacketBroadcaster"
-        private const val CLEANUP_DELAY = 500L
+        private const val CLEANUP_DELAY = AppConstants.Mesh.BROADCAST_CLEANUP_DELAY_MS
     }
 
     // Optional nickname resolver injected by higher layer (peerID -> nickname?)
