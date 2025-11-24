@@ -271,10 +271,16 @@ public class BitchatPlugin: CAPPlugin, CAPBridgedPlugin {
         notifyListeners(self.eventRSSIUpdated, data: event.toJSObject())
     }
 
+    func onPeerListUpdatedEvent(_ peers: [String]) {
+        let event: PeerListUpdatedEvent = .init(peers)
+
+        notifyListeners(self.eventPeerListUpdated, data: event.toJSObject())
+    }
+
     func onPeerIDChangedEvent(peerID: String, oldPeerID: String?, _ message: String) {
         let event: PeerIDChangedEvent = .init(peerID, oldPeerID, message)
 
-        notifyListeners(self.eventReceived, data: event.toJSObject())
+        notifyListeners(self.eventPeerIDChanged, data: event.toJSObject())
     }
 
     /**

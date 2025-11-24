@@ -214,6 +214,9 @@ import CoreBluetooth
     }
 
     func didUpdatePeerList(_ peers: [PeerID]) {
+        let peers = peers.map { $0.id }
+
+        plugin.onPeerListUpdatedEvent(peers)
     }
 
     func didUpdateBluetoothState(_ state: CBManagerState) {
@@ -285,6 +288,9 @@ import CoreBluetooth
     }
 
     func onPeerIDChanged(_ peerID: PeerID, oldPeerID: String?, nickname: String) {
+        let peerID = peerID.id
+
+        plugin.onPeerIDChangedEvent(peerID: peerID, oldPeerID: oldPeerID, nickname)
     }
 
     /**
